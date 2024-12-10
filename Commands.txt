@@ -1,0 +1,6 @@
+- Compile yacc: bison -d yacc.y
+- Compile flex: flex lex.l
+- Compile whole program: gcc yacc.tab.c lex.yy.c -o parser 
+- Test: parser test.txt
+- Show conflicts report in yacc: bison -v yacc.y
+
