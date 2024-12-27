@@ -200,7 +200,7 @@ BOOL_VAL     (0|1)\b
 ";" {return ';';}
 "," {return ',';}
 ":" {return ':';}
-
+. {return yytext[0];}
 
 
 
