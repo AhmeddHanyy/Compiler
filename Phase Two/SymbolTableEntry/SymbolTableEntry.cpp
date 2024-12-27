@@ -3,60 +3,58 @@
 #include <sstream>
 
 // Constructor
-SymbolTableEntry::SymbolTableEntry(const string& name, const string& type, const string& initialValue, bool initialized, bool constant)
+SymbolTableEntry::SymbolTableEntry(char *name, char *type, char *initialValue, bool initialized, bool constant)
     : variableName(name), variableType(type), value(initialValue), isInitialized(initialized), isConstant(constant), isAccessed(false) {}
 
 // Accessor methods
-string SymbolTableEntry::getVariableName() const {
+char *SymbolTableEntry::getVariableName()
+{
     return variableName;
 }
 
-string SymbolTableEntry::getVariableType() const {
+char *SymbolTableEntry::getVariableType()
+{
     return variableType;
 }
 
-string SymbolTableEntry::getValue() const {
+char *SymbolTableEntry::getValue()
+{
     return value;
 }
 
-bool SymbolTableEntry::getIsInitialized() const {
+bool SymbolTableEntry::getIsInitialized()
+{
     return isInitialized;
 }
 
-bool SymbolTableEntry::getIsConstant() const {
+bool SymbolTableEntry::getIsConstant()
+{
     return isConstant;
 }
 
-bool SymbolTableEntry::getIsAccessed() const {
+bool SymbolTableEntry::getIsAccessed()
+{
     return isAccessed;
 }
 
 // Mutator methods
-void SymbolTableEntry::setValue(const string& newValue) {
+void SymbolTableEntry::setValue(char *newValue)
+{
     value = newValue;
 }
 
-void SymbolTableEntry::setIsInitialized(bool initialized) {
+void SymbolTableEntry::setIsInitialized(bool initialized)
+{
     isInitialized = initialized;
 }
 
-void SymbolTableEntry::setIsAccessed(bool Accessed) {
+void SymbolTableEntry::setIsAccessed(bool Accessed)
+{
     isAccessed = Accessed;
 }
 
-// Utility methods
-string SymbolTableEntry::toString() const {
-    ostringstream oss;
-    oss << "Variable Name: " << variableName
-        << ", Type: " << variableType
-        << ", Value: " << value
-        << ", Initialized: " << (isInitialized ? "Yes" : "No")
-        << ", Constant: " << (isConstant ? "Yes" : "No")
-        << ", Accessed: " << (isAccessed ? "Yes" : "No");
-    return oss.str();
-}
-
 // Destructor
-SymbolTableEntry::~SymbolTableEntry() {
+SymbolTableEntry::~SymbolTableEntry()
+{
     // No dynamic memory to clean up
 }

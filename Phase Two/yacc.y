@@ -1,20 +1,15 @@
 
 %{
-    #include <stdio.h>
-    #include <stdlib.h>
-    #include <string.h>
-    #include "SymbolHier/SymbolHier.h"
-    int yylex(void);  
-    void yyerror(const char *s);  
-    extern FILE* yyin;                          
-    extern FILE* yyout;  
-    int yylineno = 1;
-    int num_scopes = 0;
-    SymbolHier symbolHier;
-    SymbolTable* globalTable = new SymbolTable("Global",nullptr);
-    symbolHier.addSymbolTable(globalTable);
-    symbolHier.updateCurrentScope(globalTable);
-    
+  #include <stdlib.h>
+  #include <string.h>
+  #include "SymbolHier/SymbolHier.h"
+  int yylex(void);  
+  void yyerror(const char *s);  
+  extern FILE* yyin;                          
+  extern FILE* yyout;  
+  int yylineno = 1;
+  int num_scopes = 0;
+  SymbolHier symbolHier;
 %}
 
 %union {
@@ -45,14 +40,20 @@
 
 
 
-%type <stringValue> dataType factor line start_line_mark ID expression arithExpression compExpression andLogExpression logExpression notLogExpression scope startScope endScope ifStatement ifScope elseScope IF_mark ELSE_mark WHILE_mark DO_mark doWhile function functionSig functionParams defaultParams functionCall functionCallParams epsilon returnStatement forLoop FOR_mark forLoop1 switchCase multiCase singleCase
+%type <stringValue> dataType program_start_mark factor line start_line_mark ID expression arithExpression compExpression andLogExpression logExpression notLogExpression scope startScope endScope ifStatement ifScope elseScope IF_mark ELSE_mark WHILE_mark DO_mark doWhile function functionSig functionParams defaultParams functionCall functionCallParams epsilon returnStatement forLoop FOR_mark forLoop1 switchCase multiCase singleCase term1 term2 term3
 
 %%
 
 //Production Rules
 
-program : script {}
+program : program_start_mark script {}
 ;
+
+program_start_mark : {
+  SymbolTable* globalTable = new SymbolTable("Global", nullptr);
+  symbolHier.addSymbolTable(globalTable);
+  symbolHier.updateCurrentScope(globalTable);
+}
 
 script : start_line_mark line {}
        | script start_line_mark line{}
@@ -71,31 +72,29 @@ if(symbolHier.currentScopeTable->lookUp($2,$1))
 }
      | dataType ID ASSIGN expression ';' {
 
-if(symbolHier.currentScopeTable->lookUp($2,$1))
-{
-  yyerror("Variable is already declared\n");
-}
-//check dataType and expression type compatible or not
+              if(symbolHier.currentScopeTable->lookUp($2,$1))
+              {
+                yyerror("Variable is already declared\n");
+              }
+              //check dataType and expression type compatible or not
 
-//Assuming compatible then:
-symbolHier.addEntryToCurrentScope($2,$1,expression,true,false);
-}
-     | CONST  dataType ID ASSIGN expression ';'{ printf("Assigned constant value to %s\n", $3); }
-     | ID ASSIGN expression  ';'
-{
-SymbolTable* entryScope =  symbolHier.getEntryScope($1);
-if(!entryScope)
-{
-  yyerror("Variable is not declared\n");
-}else{
-  //variable is declared and we have its scope table now lets get the entry from the table
-  SymbolTableEntry* entry = entryScope->getEntry($1);
-  //Now we need to check if type of expression compatible with type of variable
-  entry->setIsAccessed(true);
-  entryy->setValue($3);
-}
-
-
+              //Assuming compatible then:
+              // symbolHier.addEntryToCurrentScope($2,$1,expression,true,false);
+              }
+                  | CONST  dataType ID ASSIGN expression ';'{ printf("Assigned constant value to %s\n", $3); }
+                  | ID ASSIGN expression  ';'
+              {
+              SymbolTable* entryScope =  symbolHier.getEntryScope($1);
+              if(!entryScope)
+              {
+                yyerror("Variable is not declared\n");
+              }else{
+                //variable is declared and we have its scope table now lets get the entry from the table
+                SymbolTableEntry* entry = entryScope->getEntry($1);
+                //Now we need to check if type of expression compatible with type of variable
+                entry->setIsAccessed(true);
+                entry->setValue($3);
+              }
      }
      | scope {}
      | ifStatement {}
@@ -185,7 +184,7 @@ term3 : MINUS term3 {
 //if yes:
 // cast string to a number and multipy by -1 = val
 //then:
-$$ = val;
+// $$ = val;
 
 
 
@@ -197,14 +196,14 @@ factor : INTEGER_VAL { $$ = $1; }
        | FLOAT_VAL { $$ = $1;}
        | ID {
 
-SymbolTable* entryScope =  symbolHier.getEntryScope($1);
+SymbolTable* entryScope =  symbolHier.getEntryScope((string)$1);
 
 if(!entryScope)
 {
   yyerror("Variable is not declared\n");
 }else{
   //variable is declared and we have its scope table now lets get the entry from the table
-  SymbolTableEntry* entry = entryScope->getEntry($1);
+  SymbolTableEntry* entry = entryScope->getEntry((string)$1);
   if(!entry->getIsInitialized())
   {
     yyerror("Variable is not initiliazed\n");
@@ -227,7 +226,7 @@ SymbolTable* localTable = new SymbolTable("Local"+to_string(num_scopes), symbolH
 num_scopes = num_scopes +1;
 //add table as a child to current
 symbolHier.currentScopeTable->addChild(localTable);
-symbolHier.addSymbolTable(globalTable);
+symbolHier.addSymbolTable(localTable);
 //update current scope
 symbolHier.updateCurrentScope(localTable);
 
@@ -406,7 +405,7 @@ if (yyparse() == 0) {
     printf("Program did not parse due to syntax errors.\n");
 }
     
-  MotherSymbolTree.printAllTables();
+  symbolHier.printAllTables();
   fclose(yyin);
   fclose(yyout);
   return 0;
