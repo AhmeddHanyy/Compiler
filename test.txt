@@ -1,12 +1,2 @@
-int x = 3;
-int func(int y){
-    int z = 3;
-    int o = y;
-    return o;
-}
+int x;
 
-int hi = func(x);
-char no = func(5);
-int no2 = func('a',"ahmed");
-int p;
-string j = "ahmed";

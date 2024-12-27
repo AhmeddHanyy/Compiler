@@ -79,13 +79,13 @@ BOOL_VAL     (0|1)\b
 
 {INTEGER_VAL}   { 
                     //printf("Token: INTEGER_VAL - %s\n", yytext); 
-                    yylval.intValue = atoi(yytext); 
+                    yylval.intValue = strdup(yytext); 
                     return INTEGER_VAL; 
                  }
 
 {FLOAT_VAL}     { 
                     //printf("Token: FLOAT_VAL - %s\n", yytext); 
-                    yylval.floatValue = atof(yytext); 
+                    yylval.floatValue = strdup(yytext); 
                     return FLOAT_VAL; 
                  }
 
@@ -103,7 +103,7 @@ BOOL_VAL     (0|1)\b
 
 {BOOL_VAL}      { 
                     //printf("Token: BOOL_VAL - %s\n", yytext); 
-                    yylval.boolValue = atoi(yytext); 
+                    yylval.boolValue = strdup(yytext); 
                     return BOOL_VAL; 
                  }
 
