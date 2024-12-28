@@ -289,34 +289,85 @@ DO_mark : DO {
 /*##################################################################################################*/
 //FUNCTIONS
 //First function definition/prototype
-function : functionSig scope {printf("Function ends\n");}
-         | functionSig ';' {
-          //no need to put this in symbol table
-      
-
-         }
+function : functionSigStart functionSig scope {
+  printf("Function ends\n");
+  symbolHier.updateCurrentScope(symbolHier.currentScopeTable->parent);
+}
 ;
-functionSig : dataType ID '(' dataType ID functionParams ')' { 
-  printf("Starting params list\n");}
-            | dataType ID '(' dataType ID ASSIGN expression defaultParams ')' { printf("Starting params list\n");}
-            | dataType ID '('')' { printf("Starting params list\n");}
-            | VOID ID '(' dataType ID functionParams ')' { printf("Starting params list\n");}
-            | VOID ID '(' dataType ID ASSIGN expression defaultParams ')' { printf("Starting params list\n");}
-            | VOID ID '('')' { printf("Starting params list\n");}
+
+
+functionSig : '(' dataType ID functionParams ')' {
+if(symbolHier.currentScopeTable->lookUp($3,$2))
+{
+  yyerror("Variable is already in param list\n");
+}else{
+  symbolHier.addEntryToCurrentScope($3,$2,"-0",false,false);
+}
+}
+            |  '(' dataType ID ASSIGN expression defaultParams ')' {
+if(symbolHier.currentScopeTable->lookUp($3,$2))
+{
+  yyerror("Variable is already in param list\n");
+}
+//check dataType and expression type compatible or not
+
+//Assuming compatible then:
+// symbolHier.addEntryToCurrentScope($2,$1,expression,true,false);
+            }
+            |  '('')' { printf("Starting params list\n");}
 ; 
 // returnType: dataType{}
 //           | VOID{}
 // ;
+functionSigStart: dataType ID {
+SymbolTable* functionTable = new SymbolTable($2, symbolHier.currentScopeTable,$1);
+//add table as a child to current
+symbolHier.currentScopeTable->addChild(functionTable);
+symbolHier.addFunctionTable(functionTable);
+//update current scope
+symbolHier.updateCurrentScope(functionTable);
+
+}
+| VOID ID {
+SymbolTable* functionTable = new SymbolTable($2, symbolHier.currentScopeTable,(char*)"void");
+//add table as a child to current
+symbolHier.currentScopeTable->addChild(functionTable);
+symbolHier.addSymbolTable(functionTable);
+//update current scope
+symbolHier.updateCurrentScope(functionTable);
+}
+;
 
 functionParams : ',' dataType ID functionParams{
+if(symbolHier.currentScopeTable->lookUp($3,$2))
+{
+  yyerror("Variable is already in param list\n");
+}else{
+  symbolHier.addEntryToCurrentScope($3,$2,"-0",false,false);
+}
+
 }
                | defaultParams {}
 ;
-defaultParams : ',' dataType ID ASSIGN expression defaultParams  {}
+defaultParams : ',' dataType ID ASSIGN expression defaultParams  {
+if(symbolHier.currentScopeTable->lookUp($3,$2))
+{
+  yyerror("Variable is already in param list\n");
+}
+//check dataType and expression type compatible or not
+
+//Assuming compatible then:
+// symbolHier.addEntryToCurrentScope($2,$1,expression,true,false);
+
+
+}
               | epsilon {}
 ;
 //Second function call
-
+//DBMANNNNNNNNNNNNNNNNNNN
+//look at C:\Users\HANY\Desktop\Lex\Phase Two\SymbolTable\Project1\Project1\Testall.cpp : testCheckFunctionExists hatla2eny 3amleha e3ml zayaha ashan msh ader walhy el bta3 da ta3abny
+//keep in mind en ehna bn concatenate strings in reverse order. use function: concatenateTwoStrings(char*,cahr*,',')
+//Have a nice day
 functionCall : ID '(' expression functionCallParams  ')'{printf("Calling functions %s\n",$1);}
              | ID '(' ')'{printf("Calling function %s\n",$1);}
 ;

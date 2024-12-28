@@ -4,21 +4,24 @@
 #include <unordered_map>
 #include <fstream>
 #include <vector>
+#include <utility>
 #include "../SymbolTableEntry/SymbolTableEntry.h"
 
 class SymbolTable
 {
 public:
-    string tableName;
+    char* tableName;
+    char* returnType; //null for normal, not null for functional
     unordered_map<string, SymbolTableEntry *> table;
+    vector<pair<char*, SymbolTableEntry *>> orderedTable;
     SymbolTable *parent;
     vector<SymbolTable *> children; // will be used for base class only
 
-    SymbolTable(string tableName, SymbolTable *parent);
+    SymbolTable(char* tableName, SymbolTable *parent,char* type = nullptr);
     void insert(SymbolTableEntry *entry);
     virtual void addChild(SymbolTable *child); // for global scope so we should implement in base class
-    bool lookUp(string entryName, string entryType);
-    SymbolTableEntry *getEntry(string entryName, string entryType = "");
+    bool lookUp(char* entryName, char* entryType);
+    SymbolTableEntry *getEntry(char* entryName, char* entryType = (char*)"");
     virtual void printTable(const string &filepath = "") const;
 };
 

@@ -18,8 +18,8 @@ char* ORing(char* value1, char* value2);
 
 char* NOTing(char* value);
 
-vector<string> splitString(const string& str, char delimiter = ' ');
+vector<char*> splitString(const char* str, char delimiter = ' ');
 
 char* concatenateThreeStrings(char* str1, char* str2, char* str3);
 
-char* concatenateTwoStrings(char* str1, char* str2);
+char* concatenateTwoStrings(char* str1, char* str2, char delimiter = '\0');
