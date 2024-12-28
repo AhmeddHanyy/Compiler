@@ -22,6 +22,6 @@ public:
     SymbolTable *getEntryScope(char* entryName, char* entryType = (char*)"");
 
     void printAllTables(string filename = "") const;
-    SymbolTable* checkFunctionExists(char* functionName,char* returnType,char* paramsBucket);
+    SymbolTable* checkFunctionExists(char* functionName,char* paramsBucket,char*& reason);
     void addFunctionTable(SymbolTable* function);
 };

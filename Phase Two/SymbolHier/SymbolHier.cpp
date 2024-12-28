@@ -67,21 +67,20 @@ void SymbolHier::printAllTables(string filename) const
     }
 }
 
-SymbolTable* SymbolHier::checkFunctionExists(char* functionName, char* returnType, char* paramsBucket)
+SymbolTable* SymbolHier::checkFunctionExists(char* functionName, char* paramsBucket,char*& reason)
 {
     // Iterate over the vector of function tables
     for (auto &functionTable : Functions)
     {
         // First, check if the function name matches
         if (functionTable->tableName != functionName) {
+            if(!reason)
+                reason = const_cast<char*>("Function does not exist");
             continue; // Skip if function names don't match
         }
         
-        // Second, check if the return type matches
-        if (functionTable->returnType != returnType) {
-            continue; // Skip if return types don't match
-        }
-        
+
+    
         // Now, we need to compare the parameters in the correct order
         // Assume paramsBucket is a comma-separated string of parameter types
         vector<char*> functionParams;  // Parameters of the function in the symbol table
@@ -94,7 +93,10 @@ SymbolTable* SymbolHier::checkFunctionExists(char* functionName, char* returnTyp
         // Split paramsBucket into individual parameters
         vector<char*> valuesBucket = splitString(paramsBucket,','); //should be values
         //now we need to convert those values to types
-        if (valuesBucket.size() != functionParams.size()) continue;
+        if (valuesBucket.size() != functionParams.size()){ 
+            reason = const_cast<char*>("Parameters not matching");
+            continue;
+        }
         SemanticChecker checker;
         vector<char*> typesBucket;
         for(int i =0;i<valuesBucket.size();i++)
@@ -105,11 +107,13 @@ SymbolTable* SymbolHier::checkFunctionExists(char* functionName, char* returnTyp
         for (size_t i = 0; i < functionParams.size(); ++i) {
             if (functionParams[i] != typesBucket[i]) {
                 paramsMatch = false; // Parameters don't match
+                reason = const_cast<char*>("Parameters not matching");
                 break;
             }
         }
 
             if (paramsMatch) {
+                reason = nullptr;
                 return functionTable; // Function found with matching name, return type, and parameters
             }
         }

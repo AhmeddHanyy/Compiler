@@ -364,15 +364,27 @@ if(symbolHier.currentScopeTable->lookUp($3,$2))
               | epsilon {}
 ;
 //Second function call
-//DBMANNNNNNNNNNNNNNNNNNN
-//look at C:\Users\HANY\Desktop\Lex\Phase Two\SymbolTable\Project1\Project1\Testall.cpp : testCheckFunctionExists hatla2eny 3amleha e3ml zayaha ashan msh ader walhy el bta3 da ta3abny
-//keep in mind en ehna bn concatenate strings in reverse order. use function: concatenateTwoStrings(char*,cahr*,',')
-//Have a nice day
-functionCall : ID '(' expression functionCallParams  ')'{printf("Calling functions %s\n",$1);}
+
+functionCall : ID '(' expression functionCallParams  ')'{
+
+char* params = concatenateTwoStrings($4,$3,',');
+char* reason = nullptr;
+SymbolTable* foundTable = symbolHier.checkFunctionExists($1, params,reason);
+if(!foundTable){
+yyerror(reason);
+}else{
+  //found
+  $$ = foundTable->returnType;
+}
+
+
+}
              | ID '(' ')'{printf("Calling function %s\n",$1);}
 ;
 
-functionCallParams :  ',' expression functionCallParams {}
+functionCallParams :  ',' expression functionCallParams {
+$$ = concatenateTwoStrings($3, $2, ',');
+}
                    | epsilon {}
 ;
 

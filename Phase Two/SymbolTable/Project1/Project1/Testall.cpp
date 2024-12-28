@@ -83,10 +83,10 @@ void testCheckFunctionExists() {
     functionTable->insert(param2);
 
     // Create a function entry (assuming SymbolTableEntry has a constructor for functions)
-   
+    char* reason = nullptr;
 
     // Test with matching parameters
-    SymbolTable* foundTable = symbolHier.checkFunctionExists(functionName, returnType, params);
+    SymbolTable* foundTable = symbolHier.checkFunctionExists(functionName, params,reason);
     assert(foundTable != nullptr);  // We should find the function
 
     std::cout << "testCheckFunctionExists passed!" << std::endl;
