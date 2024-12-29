@@ -61,41 +61,89 @@ script : start_line_mark line {}
 start_line_mark : {printf("Processing line %d in the script.\n",yylineno);};
 // Variable Declaration
 
-line : dataType ID ';' {
-
-if(symbolHier.currentScopeTable->lookUp($2,$1))
-{
-  yyerror("Variable is already declared\n");
-}else{
-  symbolHier.addEntryToCurrentScope($2,$1,"-0",false,false);
-}
-}
+line : 
+       dataType ID ';' {
+                if (symbolHier.currentScopeTable->lookUp($2,$1))
+                {
+                  yyerror("Variable is already declared\n");
+                } 
+                else {
+                  symbolHier.addEntryToCurrentScope($2,$1,"-0",false,false);
+                }
+                }
      | dataType ID ASSIGN expression ';' {
+                if (symbolHier.currentScopeTable->lookUp($2, $1))
+                {
+                  yyerror("Variable is already declared\n");
+                }
+                else {
+                  // Create an instance of SemanticChecker
+                  SemanticChecker semanticChecker;
 
-              if(symbolHier.currentScopeTable->lookUp($2,$1))
-              {
-                yyerror("Variable is already declared\n");
-              }
-              //check dataType and expression type compatible or not
+                  // Determine the types of the dataType and expression
+                  char* dataType = $1;
+                  char* exprType = semanticChecker.determineType($4);
 
-              //Assuming compatible then:
-              // symbolHier.addEntryToCurrentScope($2,$1,expression,true,false);
+                  // Check if the types are compatible
+                  if (!semanticChecker.matchTypes(dataType, exprType))
+                  {
+                    yyerror("Type mismatch between data type and expression\n");
+                  }
+                  else
+                  {
+                    // Assuming compatible, add the entry to the current scope
+                    symbolHier.addEntryToCurrentScope($2, $1, $4, true, false);
+                  }
+                }
               }
-                  | CONST  dataType ID ASSIGN expression ';'{ printf("Assigned constant value to %s\n", $3); }
-                  | ID ASSIGN expression  ';'
-              {
-              SymbolTable* entryScope =  symbolHier.getEntryScope($1);
-              if(!entryScope)
-              {
-                yyerror("Variable is not declared\n");
-              }else{
-                //variable is declared and we have its scope table now lets get the entry from the table
-                SymbolTableEntry* entry = entryScope->getEntry($1);
-                //Now we need to check if type of expression compatible with type of variable
-                entry->setIsAccessed(true);
-                entry->setValue($3);
+      | CONST  dataType ID ASSIGN expression ';'{ 
+                if (symbolHier.currentScopeTable->lookUp($3, $2)) {
+                    yyerror("Variable is already declared\n");
+                } else {
+                    // Create an instance of SemanticChecker
+                    SemanticChecker semanticChecker;
+
+                    // Determine the types of the dataType and expression
+                    char* dataType = $2;
+                    char* exprType = semanticChecker.determineType($5);
+
+                    // Check if the types are compatible
+                    if (!semanticChecker.matchTypes(dataType, exprType)) {
+                        yyerror("Type mismatch between data type and expression\n");
+                    } else {
+                        // Assuming compatible, add the entry to the current scope as a constant
+                        symbolHier.addEntryToCurrentScope($3, $2, $5, true, true);
+                        printf("Assigned constant value to %s\n", $3);
+                    }
+                }
+       }
+      | ID ASSIGN expression  ';'{
+              SymbolTableEntry* entry = symbolHier.currentScopeTable->getEntry($1, "");
+              if (!entry) {
+                  yyerror("Variable is not declared\n");
+              } else {
+                  // Create an instance of SemanticChecker
+                  SemanticChecker semanticChecker;
+
+                  // Determine the type of the expression
+                  char* exprType = semanticChecker.determineType($3);
+
+                  // Check if the variable is a constant
+                  if (entry->getIsConstant()) {
+                      yyerror("Cannot assign to a constant variable\n");
+                  } else {
+                      // Check if the types are compatible
+                      if (!semanticChecker.matchTypes(entry->getVariableType(), exprType)) {
+                          yyerror("Type mismatch between variable and expression\n");
+                      } else {
+                          // Assuming compatible, update the value of the variable
+                          entry->setValue($3);
+                          entry->setIsInitialized(true);
+                          printf("Assigned value to %s\n", $1);
+                      }
+                  }
               }
-     }
+            }
      | scope {}
      | ifStatement {}
      | whileLoop  {}
@@ -195,23 +243,22 @@ term3 : MINUS term3 {
 factor : INTEGER_VAL { $$ = $1; }
        | FLOAT_VAL { $$ = $1;}
        | ID {
+              SymbolTable* entryScope =  symbolHier.getEntryScope($1);
 
-SymbolTable* entryScope =  symbolHier.getEntryScope((string)$1);
-
-if(!entryScope)
-{
-  yyerror("Variable is not declared\n");
-}else{
-  //variable is declared and we have its scope table now lets get the entry from the table
-  SymbolTableEntry* entry = entryScope->getEntry((string)$1);
-  if(!entry->getIsInitialized())
-  {
-    yyerror("Variable is not initiliazed\n");
-  }
-  entry->setIsAccessed(true);
-  $$ = entry->getValue();
-}
-}
+              if(!entryScope)
+              {
+                yyerror("Variable is not declared\n");
+              }else{
+                //variable is declared and we have its scope table now lets get the entry from the table
+                SymbolTableEntry* entry = entryScope->getEntry($1);
+                if(!entry->getIsInitialized())
+                {
+                  yyerror("Variable is not initiliazed\n");
+                }
+                entry->setIsAccessed(true);
+                $$ = entry->getValue();
+              }
+            }
        | '(' logExpression ')' { printf("Processed parenthesis with logical expression.\n"); }
 ;
 /*###########################################################################################*/
@@ -221,16 +268,14 @@ scope : startScope script endScope {}
 ;
 
 startScope : '{' {
-//create new table
-SymbolTable* localTable = new SymbolTable("Local"+to_string(num_scopes), symbolHier.currentScopeTable);
-num_scopes = num_scopes +1;
-//add table as a child to current
-symbolHier.currentScopeTable->addChild(localTable);
-symbolHier.addSymbolTable(localTable);
-//update current scope
-symbolHier.updateCurrentScope(localTable);
-
-                 
+  //create new table
+  SymbolTable* localTable = new SymbolTable(strdup(("Local" + to_string(num_scopes)).c_str()), symbolHier.currentScopeTable);
+  num_scopes = num_scopes +1;
+  //add table as a child to current
+  symbolHier.currentScopeTable->addChild(localTable);
+  symbolHier.addSymbolTable(localTable);
+  //update current scope
+  symbolHier.updateCurrentScope(localTable);                
 }
 ;
 
@@ -405,21 +450,18 @@ int i; will be allowed but who cares
 
 */
 forLoop : FOR_mark '(' forLoop1  ';' expression ';' ID ASSIGN expression ')' scope  {
-symbolHier.updateCurrentScope(symbolHier.currentScopeTable->parent); 
+  symbolHier.updateCurrentScope(symbolHier.currentScopeTable->parent); 
 }
 ;
       
 FOR_mark : FOR {
-
-SymbolTable* localTable = new SymbolTable("Local"+to_string(num_scopes), symbolHier.currentScopeTable);
-num_scopes = num_scopes +1;
-//add table as a child to current
-symbolHier.currentScopeTable->addChild(localTable);
-symbolHier.addSymbolTable(localTable);
-//update current scope
-symbolHier.updateCurrentScope(localTable);
-
-
+  SymbolTable* localTable = new SymbolTable(strdup(("Local" + to_string(num_scopes)).c_str()), symbolHier.currentScopeTable);
+  num_scopes = num_scopes +1;
+  //add table as a child to current
+  symbolHier.currentScopeTable->addChild(localTable);
+  symbolHier.addSymbolTable(localTable);
+  //update current scope
+  symbolHier.updateCurrentScope(localTable);
 }
 ;
 forLoop1 : dataType ID ASSIGN expression {}

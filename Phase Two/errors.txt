@@ -1,0 +1,2 @@
+line [2]: Error: Type mismatch between variable and expression
+

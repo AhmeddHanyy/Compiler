@@ -1,9 +1,4 @@
-int x;
-{
-    int y;
-    int d;
-    {
-        int z;
-    }
-}
-int w;
+int x = 44;
+x= 55.0;
+int y = 55;
+y = 66;
