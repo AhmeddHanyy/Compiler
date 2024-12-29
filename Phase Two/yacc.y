@@ -3,6 +3,7 @@
   #include <stdlib.h>
   #include <string.h>
   #include "SymbolHier/SymbolHier.h"
+  #include "Quadraples/Quadraples.h"
   int yylex(void);  
   void yyerror(const char *s);  
   extern FILE* yyin;                          
@@ -10,6 +11,7 @@
   int yylineno = 1;
   int num_scopes = 0;
   SymbolHier symbolHier;
+  Quadraples quad;
 %}
 
 %union {
@@ -55,28 +57,33 @@ program_start_mark : {
   symbolHier.updateCurrentScope(globalTable);
 }
 
-script : start_line_mark line {}
-       | script start_line_mark line{}
+script : 
+        start_line_mark line {
+          quad.printQuadraples();
+          quad.printQuadraplesToFile("output.txt");
+        }
+      | script start_line_mark line {
+          quad.printQuadraples();
+          quad.printQuadraplesToFile("output.txt");
+      }
 ;
 start_line_mark : {printf("Processing line %d in the script.\n",yylineno);};
-// Variable Declaration
 
 line : 
-       dataType ID ';' {
-                if (symbolHier.currentScopeTable->lookUp($2,$1))
-                {
+        dataType ID ';' {
+                SymbolTable* entryScope = symbolHier.getEntryScope($2, $1);
+                if (entryScope) {
                   yyerror("Variable is already declared\n");
-                } 
-                else {
+                } else {
+                  printf("Variable %s declared\n", $2);
                   symbolHier.addEntryToCurrentScope($2,$1,"-0",false,false);
                 }
-                }
-     | dataType ID ASSIGN expression ';' {
-                if (symbolHier.currentScopeTable->lookUp($2, $1))
-                {
-                  yyerror("Variable is already declared\n");
-                }
-                else {
+              }
+      | dataType ID ASSIGN expression ';' {
+                SymbolTable* entryScope = symbolHier.getEntryScope($2, $1);
+                if (entryScope) {
+                    yyerror("Variable is already declared\n");
+                } else {
                   // Create an instance of SemanticChecker
                   SemanticChecker semanticChecker;
 
@@ -91,8 +98,14 @@ line :
                   }
                   else
                   {
-                    // Assuming compatible, add the entry to the current scope
+                    printf("Assigned value to %s\n", $2);
+                    // Add the entry to the current scope
                     symbolHier.addEntryToCurrentScope($2, $1, $4, true, false);
+                    printf("Added entry to current scope\n");
+                    // Use quads to assign the value to the variable
+                    quad.addUnary("MOV", $4);
+                    quad.popLabel();
+                    quad.resetEntryCount();
                   }
                 }
               }
@@ -115,6 +128,10 @@ line :
                         // Assuming compatible, add the entry to the current scope as a constant
                         symbolHier.addEntryToCurrentScope($3, $2, $5, true, true);
                         printf("Assigned constant value to %s\n", $3);
+                        // Use quads to assign the value to the variable
+                        quad.addUnary("MOV", $5);
+                        quad.popLabel();
+                        quad.resetEntryCount();
                     }
                 }
        }
@@ -143,21 +160,25 @@ line :
                           entry->setValue($3);
                           entry->setIsInitialized(true);
                           printf("Assigned value to %s\n", $1);
+                          // Use quads to assign the value to the variable
+                          quad.addUnary("MOV", $3);
+                          quad.popLabel();
+                          quad.resetEntryCount();
                       }
                   }
               }
             }
-     | scope {}
-     | ifStatement {}
-     | whileLoop  {}
-     | doWhile {}
-     | function{}
-     | functionCall{}
-     | returnStatement {}
-     | forLoop {}
-     | BREAK ';'{}
-     | CONTINUE ';' {}
-     | switchCase
+      | scope {}
+      | ifStatement {}
+      | whileLoop  {}
+      | doWhile {}
+      | function{}
+      | functionCall{}
+      | returnStatement {}
+      | forLoop {}
+      | BREAK ';'{}
+      | CONTINUE ';' {}
+      | switchCase
 ;
 
 
@@ -167,7 +188,10 @@ dataType : INT { $$ = "int";  }
          | STRING { $$ = "string"; }
          | BOOL { $$ = "bool";}
 ;
-ID : IDENTIFIER { $$ = $1;}
+ID : IDENTIFIER { 
+                  $$ = $1;
+                  quad.pushLabel($1);  
+                }
    ;
 
 /*#########################################################################*/
@@ -181,47 +205,47 @@ expression : logExpression{$$ = $1;}
 */
 
 // Logical Expressions
-logExpression : logExpression OR andLogExpression { printf("Evaluated OR expression.\n"); }
-              | andLogExpression { printf("Evaluated single andLogExpression.\n"); }
+logExpression : logExpression OR andLogExpression {}
+              | andLogExpression {}
 ;
 
-andLogExpression : andLogExpression AND notLogExpression { printf("Evaluated AND expression.\n"); }
-                 | notLogExpression { printf("Evaluated single notLogExpression.\n"); }
+andLogExpression : andLogExpression AND notLogExpression {}
+                 | notLogExpression {}
 ;
 
-notLogExpression : NOT notLogExpression { printf("Evaluated NOT expression.\n"); }
-                 | compExpression { printf("Evaluated comparison expression.\n"); }
+notLogExpression : NOT notLogExpression {}
+                 | compExpression {}
 ;
 
 // Comparison Expressions
 
-compExpression : compExpression Comparator arithExpression { printf("Evaluated comparison expression with comparator.\n"); }
-               | arithExpression { printf("Evaluated simple arithmetic expression.\n"); }
+compExpression : compExpression Comparator arithExpression {}
+               | arithExpression {}
 ;
 
-Comparator: EQ { printf("Comparator: ==\n"); }
-          | NEQ { printf("Comparator: !=\n"); }
-          | LT { printf("Comparator: <\n"); }
-          | GT { printf("Comparator: >\n"); }
-          | LE { printf("Comparator: <=\n"); }
-          | GE { printf("Comparator: >=\n"); }
+Comparator: EQ {}
+          | NEQ {}
+          | LT {}
+          | GT {}
+          | LE {}
+          | GE {}
 ;
 
 // Arithmetic Expressions
 
-arithExpression : term1 { printf("Processed term1.\n"); }
-                | arithExpression PLUS term1 { printf("Processed addition.\n"); }
-                | arithExpression MINUS term1 { printf("Processed subtraction.\n"); }
+arithExpression : term1 {}
+                | arithExpression PLUS term1 {}
+                | arithExpression MINUS term1 {}
 ;
 
-term1 : term2 { printf("Processed term2.\n"); }
-     | term1 MULTIPLY term2 { printf("Processed multiplication.\n"); }
-     | term1 DIVIDE term2 { printf("Processed division.\n"); }
+term1 : term2 {}
+     | term1 MULTIPLY term2 {}
+     | term1 DIVIDE term2 {}
      
 ;
 
-term2 : term3 { printf("Processed term3.\n"); }
-      | term3 POWER term2 { printf("Processed exponentiation.\n"); }
+term2 : term3 {}
+      | term3 POWER term2 {}
 ;
 
 /*

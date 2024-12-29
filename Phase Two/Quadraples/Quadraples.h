@@ -61,6 +61,7 @@ public:
     Quadraples();
     void insertEntry(const string &operation, const string &arg1, const string &arg2, const string &result);
     void insertVariable(string name);
+    void pushLabel(char *label);
     void popLabel();
     void addUnary(char *operation, char *result);
     void addBinary(char *operation, char *result);

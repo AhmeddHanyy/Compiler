@@ -24,19 +24,29 @@ void Quadraples::insertEntry(const string &operation, const string &arg1, const 
     incEntryCount();
 }
 
+void Quadraples::pushLabel(char *label)
+{
+    string labelStr(label);
+    labels.push(labelStr);
+}
+
 void Quadraples::addUnary(char *operation, char *result)
 {
     // convert char* to string
     string res(result);
     string op(operation);
+    printf("Adding unary operation: %s %s\n", operation, result);
 
     // pop the last label from the stack
     string arg1 = labels.top();
     labels.pop();
+    printf("Popped label: %s\n", arg1.c_str());
 
     // create a new entry
     insertEntry(op, arg1, "", res);
+    printf("Inserted entry: %s %s %s %s\n", op.c_str(), arg1.c_str(), "", res.c_str());
     labels.push(res);
+    printf("Pushed label: %s\n", res.c_str());
 }
 
 void Quadraples::addBinary(char *operation, char *result)
@@ -240,6 +250,7 @@ void Quadraples::printQuadraples() const
 
 void Quadraples::printQuadraplesToFile(char *filename) const
 {
+    printf("Printing quadraples to file: %s\n", filename);
     std::string file_name(filename);
     std::ofstream file(file_name);
     if (!file.is_open())
