@@ -1,3 +1,2 @@
- MOV y  5
- MOV y  6
- MOV x  8
+ MOV x  0
+ MOV myFunc  int

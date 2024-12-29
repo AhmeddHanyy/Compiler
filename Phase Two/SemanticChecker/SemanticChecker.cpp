@@ -48,12 +48,14 @@ bool SemanticChecker::isInt(char *str)
 // Check if a string represents a float
 bool SemanticChecker::isFloat(char *str)
 {
-    if (str == nullptr || *str == '\0')
+    if (str == nullptr || *str == '\0' || str[0] == '"' || str[0] == '\'')
         return false;
 
     bool decimalPointFound = false;
+    printf("isFloat: str: %s\n", str);
     for (int i = 0; str[i] != '\0'; i++)
     {
+        printf("isFloat: str[%d]: %c\n", i, str[i]);
         if (i == 0 && str[i] == '-')
         {
             continue; // allow leading negative sign
@@ -100,22 +102,46 @@ bool SemanticChecker::isBool(char *str)
 // Match the types of two strings
 bool SemanticChecker::matchTypes(char *type1, char *type2)
 {
-    return strcmp(type1, type2) == 0;
+    return strcmp(determineType(type1), determineType(type2)) == 0;
 }
 
 // Determine the type of a given string
 char *SemanticChecker::determineType(char *str)
 {
+    printf("determineType: str: %s\n", str);
+    // if str is one of the types we return then return it
+    if (strcmp(str, "int") == 0 || strcmp(str, "float") == 0 || strcmp(str, "string") == 0 || strcmp(str, "char") == 0 || strcmp(str, "bool") == 0)
+    {
+        printf("determineType: Already a type: %s\n", str);
+        return str;
+    }
+
     if (isInt(str))
+    {
+        printf("determineType: int\n");
         return (char *)"int";
+    }
     if (isFloat(str))
+    {
+        printf("determineType: float\n");
         return (char *)"float";
+    }
     if (isString(str))
+    {
+        printf("determineType: string\n");
         return (char *)"string";
+    }
     if (isChar(str))
+    {
+        printf("determineType: char\n");
         return (char *)"char";
+    }
     if (isBool(str))
+    {
+        printf("determineType: bool\n");
         return (char *)"bool";
+    }
+    printf("determineType: unknown\n");
     return (char *)"unknown";
 }
 

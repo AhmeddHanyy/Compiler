@@ -20,7 +20,7 @@ void SymbolHier::addEntryToCurrentScope(char *name, char *type, char *initialVal
     this->currentScopeTable->insert(entry);
 }
 
-SymbolTable *SymbolHier::getEntryScope(char* entryName, char* entryType)
+SymbolTable *SymbolHier::getEntryScope(char *entryName, char *entryType)
 {
     SymbolTable *current = this->currentScopeTable;
     while (current != nullptr)
@@ -67,61 +67,84 @@ void SymbolHier::printAllTables(string filename) const
     }
 }
 
-SymbolTable* SymbolHier::checkFunctionExists(char* functionName, char* paramsBucket,char*& reason)
+SymbolTable *SymbolHier::checkFunctionExists(char *functionName, char *paramsBucket, char *&reason)
 {
     // Iterate over the vector of function tables
     for (auto &functionTable : Functions)
     {
+        printf("--haaany: %s\n", functionTable->tableName);
         // First, check if the function name matches
-        if (functionTable->tableName != functionName) {
-            if(!reason)
-                reason = const_cast<char*>("Function does not exist");
+        if (strcmp(functionTable->tableName, functionName) != 0)
+        {
+            if (!reason)
+                reason = const_cast<char *>("Function does not exist");
             continue; // Skip if function names don't match
         }
-        
 
-    
         // Now, we need to compare the parameters in the correct order
         // Assume paramsBucket is a comma-separated string of parameter types
-        vector<char*> functionParams;  // Parameters of the function in the symbol table
-        
+        vector<char *> functionParams; // Parameters of the function in the symbol table
+
         // Extract the function parameters from the function symbol table (assumed to be stored in `orderedTable`)
-        for (auto &entry : functionTable->orderedTable) {
+        for (auto &entry : functionTable->orderedTable)
+        {
             functionParams.push_back(entry.second->getVariableType()); // Get each parameter's type
         }
-        
+
         // Split paramsBucket into individual parameters
-        vector<char*> valuesBucket = splitString(paramsBucket,','); //should be values
-        //now we need to convert those values to types
-        if (valuesBucket.size() != functionParams.size()){ 
-            reason = const_cast<char*>("Parameters not matching");
+        vector<char *> valuesBucket = splitString(paramsBucket, ','); // should be values
+        // now we need to convert those values to types
+
+        // print valuesBucket
+        for (int i = 0; i < valuesBucket.size(); i++)
+        {
+            printf("valuesBucket[%d]: %s\n", i, valuesBucket[i]);
+        }
+
+        // print functionParams
+        for (int i = 0; i < functionParams.size(); i++)
+        {
+            printf("functionParams[%d]: %s\n", i, functionParams[i]);
+        }
+
+        if (valuesBucket.size() != functionParams.size())
+        {
+            reason = const_cast<char *>("Parameters not matching");
             continue;
         }
         SemanticChecker checker;
-        vector<char*> typesBucket;
-        for(int i =0;i<valuesBucket.size();i++)
-            typesBucket.push_back(checker.determineType(valuesBucket[i]));      
-            
+        vector<char *> typesBucket;
+        for (int i = 0; i < valuesBucket.size(); i++)
+        {
+            char *v = checker.determineType(valuesBucket[i]);
+            printf("checkFunctionExists: typesBucket[%d]: %s\n", i, v);
+            typesBucket.push_back(v);
+        }
+
         bool paramsMatch = true;
 
-        for (size_t i = 0; i < functionParams.size(); ++i) {
-            if (functionParams[i] != typesBucket[i]) {
+        for (size_t i = 0; i < functionParams.size(); ++i)
+        {
+            if (strcmp(functionParams[i], typesBucket[i]) != 0)
+            {
                 paramsMatch = false; // Parameters don't match
-                reason = const_cast<char*>("Parameters not matching");
+                reason = const_cast<char *>("Parameters not matching");
                 break;
             }
         }
 
-            if (paramsMatch) {
-                reason = nullptr;
-                return functionTable; // Function found with matching name, return type, and parameters
-            }
+        if (paramsMatch)
+        {
+            reason = nullptr;
+            return functionTable; // Function found with matching name, return type, and parameters
         }
+    }
 
     return nullptr; // No matching function found
 }
 
-void SymbolHier:: addFunctionTable(SymbolTable* function){
-Functions.push_back(function);
-this->addSymbolTable(function);
+void SymbolHier::addFunctionTable(SymbolTable *function)
+{
+    Functions.push_back(function);
+    this->addSymbolTable(function);
 }

@@ -1,17 +1,18 @@
 #include "SymbolTable.h"
 #include "../Utils/utils.h"
 
-SymbolTable::SymbolTable(char* tableName, SymbolTable *parent,char* type)
+SymbolTable::SymbolTable(char *tableName, SymbolTable *parent, char *type)
     : tableName(tableName), parent(parent), returnType(type) {}
 
 void SymbolTable::insert(SymbolTableEntry *entry)
 {
-    if (returnType) {
+    if (returnType)
+    {
         // For function tables, maintain insertion order
-        orderedTable.emplace_back(concatenateTwoStrings(entry->getVariableName(), entry->getVariableType(),' '), entry);
+        orderedTable.emplace_back(concatenateTwoStrings(entry->getVariableName(), entry->getVariableType(), ' '), entry);
         return;
     }
-    this->table[concatenateTwoStrings(entry->getVariableName(), entry->getVariableType(),' ')] = entry;
+    this->table[concatenateTwoStrings(entry->getVariableName(), entry->getVariableType(), ' ')] = entry;
 }
 
 void SymbolTable::addChild(SymbolTable *child)
@@ -20,90 +21,107 @@ void SymbolTable::addChild(SymbolTable *child)
     child->parent = this;
 }
 
-bool SymbolTable::lookUp(char* entryName, char* entryType)
+bool SymbolTable::lookUp(char *entryName, char *entryType)
 {
     // If no entryType is specified, try with all possible types
     if (strcmp(entryType, "") == 0)
     {
         // Iterate over all possible types and check if any entry exists with the entryName
-        for (const char* type : { "int", "float", "string", "char", "bool", "void" }) {
+        for (const char *type : {"int", "float", "string", "char", "bool", "void"})
+        {
             // Allocate memory for the type string
-            size_t len = strlen(type) + 1;  // +1 for the null-terminator
-            char* typeCopy = new char[len];
+            size_t len = strlen(type) + 1; // +1 for the null-terminator
+            char *typeCopy = new char[len];
 
             // Use strcpy_s to copy the string safely
             strcpy_s(typeCopy, len, type);
 
-            char* key = concatenateTwoStrings(entryName,typeCopy,' ');
-            if (returnType) {
+            char *key = concatenateTwoStrings(entryName, typeCopy, ' ');
+            if (returnType)
+            {
                 // Search in orderedTable
-                for (const auto &entry : orderedTable) {
-                    if (strcmp(entry.first,key) == 0) return true;
+                for (const auto &entry : orderedTable)
+                {
+                    if (strcmp(entry.first, key) == 0)
+                        return true;
                 }
             }
-            else{
-            if (this->table.find(key) != this->table.end())
+            else
             {
-                return true; // Entry found with this type
-            }
+                if (this->table.find(key) != this->table.end())
+                {
+                    return true; // Entry found with this type
+                }
             }
         }
         return false; // No matching entry found with any type
     }
     else
     {
-        if (returnType) {
+        if (returnType)
+        {
             // Search in orderedTable
-            for (const auto &entry : orderedTable) {
-                if (strcmp(entry.first,concatenateTwoStrings(entryName,entryType,' ')) == 0) return true;
+            for (const auto &entry : orderedTable)
+            {
+                if (strcmp(entry.first, concatenateTwoStrings(entryName, entryType, ' ')) == 0)
+                    return true;
             }
             return false;
         }
         // If entryType is provided, just check for that specific type
-        return this->table.find(concatenateTwoStrings(entryName,entryType,' ')) != this->table.end();
+        return this->table.find(concatenateTwoStrings(entryName, entryType, ' ')) != this->table.end();
     }
 }
 
-SymbolTableEntry *SymbolTable::getEntry(char* entryName, char* entryType)
+SymbolTableEntry *SymbolTable::getEntry(char *entryName, char *entryType)
 {
     // If entryType is provided, directly access the corresponding entry
-if(lookUp(entryName,entryType)){
-    if (strcmp(entryType, "") == 1)
+    if (lookUp(entryName, entryType))
     {
-        if (returnType) {
-            // Search in orderedTable
-            for (const auto &entry : orderedTable) {
-                if (strcmp(entry.first,concatenateTwoStrings(entryName,entryType,' ')) ==0) return entry.second;
+        if (strcmp(entryType, "") != 0)
+        {
+            if (returnType)
+            {
+                // Search in orderedTable
+                for (const auto &entry : orderedTable)
+                {
+                    if (strcmp(entry.first, concatenateTwoStrings(entryName, entryType, ' ')) == 0)
+                        return entry.second;
+                }
             }
-    
-        }else
-            return this->table[concatenateTwoStrings(entryName,entryType,' ')];
-    }
+            else
+                return this->table[concatenateTwoStrings(entryName, entryType, ' ')];
+        }
 
-    // If entryType is not provided, try all types
-        for (const char* type : { "int", "float", "string", "char", "bool", "void" }) {
+        // If entryType is not provided, try all types
+        for (const char *type : {"int", "float", "string", "char", "bool", "void"})
+        {
             // Allocate memory for the type string
-            size_t len = strlen(type) + 1;  // +1 for the null-terminator
-            char* typeCopy = new char[len];
+            size_t len = strlen(type) + 1; // +1 for the null-terminator
+            char *typeCopy = new char[len];
 
             // Use strcpy_s to copy the string safely
             strcpy_s(typeCopy, len, type);
 
-            char* key = concatenateTwoStrings(entryName,typeCopy,' ');
-            if (returnType) {
+            char *key = concatenateTwoStrings(entryName, typeCopy, ' ');
+            if (returnType)
+            {
                 // Search in orderedTable
-                for (const auto &entry : orderedTable) {
-                    if (strcmp(entry.first, key)==0) return entry.second;
+                for (const auto &entry : orderedTable)
+                {
+                    if (strcmp(entry.first, key) == 0)
+                        return entry.second;
                 }
             }
-        else{
-        if (this->table.find(key) != this->table.end())
-        {
-            return this->table[key]; // Return the first matching entry
-        }
+            else
+            {
+                if (this->table.find(key) != this->table.end())
+                {
+                    return this->table[key]; // Return the first matching entry
+                }
+            }
         }
     }
-}
     return nullptr; // Return nullptr if no entry found
 }
 
@@ -127,10 +145,11 @@ void SymbolTable::printTable(const string &filepath) const
             return;
         }
     }
-    
+
     // Now print the table (to either console or file)
     *output << (returnType ? "Function Name: " : "Table Name: ") << tableName << endl;
-    if (returnType) *output << "Return Type: " << returnType << endl;
+    if (returnType)
+        *output << "Return Type: " << returnType << endl;
 
     if (this->parent)
         *output << "Parent: " << this->parent->tableName << endl;
@@ -146,14 +165,17 @@ void SymbolTable::printTable(const string &filepath) const
     }
 
     *output << "Table: " << endl;
-    if (returnType) {
-    // Print ordered table for function
-    for (const auto &entry : orderedTable)
-        *output << entry.first << " : " << entry.second->getVariableName() << " (Parameter)" << endl;
-    } else {
-    // Print unordered table for normal
-    for (const auto &entry : table)
-        *output << entry.first << " : " << entry.second->getVariableName() << endl;
+    if (returnType)
+    {
+        // Print ordered table for function
+        for (const auto &entry : orderedTable)
+            *output << entry.first << " : " << entry.second->getVariableName() << " (Parameter)" << endl;
+    }
+    else
+    {
+        // Print unordered table for normal
+        for (const auto &entry : table)
+            *output << entry.first << " : " << entry.second->getVariableName() << endl;
     }
 
     // If we used a file stream, close it

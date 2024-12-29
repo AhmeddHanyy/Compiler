@@ -36,7 +36,7 @@
 %token <intValue> INTEGER_VAL
 %token <floatValue> FLOAT_VAL
 %token <stringValue> STRING_VAL
-%token <charValue> CHAR_VAL
+%token <stringValue> CHAR_VAL
 %token <boolValue> BOOL_VAL
 %token <idValue> IDENTIFIER
 
@@ -87,12 +87,8 @@ line :
                   // Create an instance of SemanticChecker
                   SemanticChecker semanticChecker;
 
-                  // Determine the types of the dataType and expression
-                  char* dataType = $1;
-                  char* exprType = semanticChecker.determineType($4);
-
                   // Check if the types are compatible
-                  if (!semanticChecker.matchTypes(dataType, exprType))
+                  if (!semanticChecker.matchTypes($1, $4))
                   {
                     yyerror("Type mismatch between data type and expression\n");
                   }
@@ -117,12 +113,8 @@ line :
                     // Create an instance of SemanticChecker
                     SemanticChecker semanticChecker;
 
-                    // Determine the types of the dataType and expression
-                    char* dataType = $2;
-                    char* exprType = semanticChecker.determineType($5);
-
                     // Check if the types are compatible
-                    if (!semanticChecker.matchTypes(dataType, exprType)) {
+                    if (!semanticChecker.matchTypes($2, $5)) {
                         yyerror("Type mismatch between data type and expression\n");
                     } else {
                         // Assuming compatible, add the entry to the current scope as a constant
@@ -145,15 +137,12 @@ line :
                   SymbolTableEntry* entry = entryScope->getEntry($1);
                   SemanticChecker semanticChecker;
 
-                  // Determine the type of the expression
-                  char* exprType = semanticChecker.determineType($3);
-
                   // Check if the variable is a constant
                   if (entry->getIsConstant()) {
                       yyerror("Cannot assign to a constant variable\n");
                   } else {
                       // Check if the types are compatible
-                      if (!semanticChecker.matchTypes(entry->getVariableType(), exprType)) {
+                      if (!semanticChecker.matchTypes(entry->getVariableType(), $3)) {
                           yyerror("Type mismatch between variable and expression\n");
                       } else {
                           // Assuming compatible, update the value of the variable
@@ -172,8 +161,8 @@ line :
       | ifStatement {}
       | whileLoop  {}
       | doWhile {}
-      | function{}
-      | functionCall{}
+      | function {}
+      | functionCall {}
       | returnStatement {}
       | forLoop {}
       | BREAK ';'{}
@@ -269,6 +258,8 @@ term3 : MINUS term3 {
 
 factor : INTEGER_VAL { $$ = $1; }
        | FLOAT_VAL { $$ = $1;}
+       | CHAR_VAL { $$ = $1;}
+       | STRING_VAL { $$ = $1;}
        | ID {
               SymbolTable* entryScope =  symbolHier.getEntryScope($1);
 
@@ -424,13 +415,12 @@ if(symbolHier.currentScopeTable->lookUp($3,$2))
 //           | VOID{}
 // ;
 functionSigStart: dataType ID {
-SymbolTable* functionTable = new SymbolTable($2, symbolHier.currentScopeTable,$1);
-//add table as a child to current
-symbolHier.currentScopeTable->addChild(functionTable);
-symbolHier.addFunctionTable(functionTable);
-//update current scope
-symbolHier.updateCurrentScope(functionTable);
-
+  SymbolTable* functionTable = new SymbolTable($2, symbolHier.currentScopeTable,$1);
+  //add table as a child to current
+  symbolHier.currentScopeTable->addChild(functionTable);
+  symbolHier.addFunctionTable(functionTable);
+  //update current scope
+  symbolHier.updateCurrentScope(functionTable);
 }
 | VOID ID {
 SymbolTable* functionTable = new SymbolTable($2, symbolHier.currentScopeTable,(char*)"void");
@@ -471,11 +461,13 @@ if(symbolHier.currentScopeTable->lookUp($3,$2))
 
 functionCall : ID '(' expression functionCallParams  ')'{
 
+printf("--params: %s expression: %s\n",$4,$3);
 char* params = concatenateTwoStrings($4,$3,',');
+printf("--params: %s\n",params);
 char* reason = nullptr;
 SymbolTable* foundTable = symbolHier.checkFunctionExists($1, params,reason);
 if(!foundTable){
-yyerror(reason);
+  yyerror(reason);
 }else{
   //found
   $$ = foundTable->returnType;
@@ -492,7 +484,7 @@ $$ = concatenateTwoStrings($3, $2, ',');
                    | epsilon {}
 ;
 
-epsilon : {}
+epsilon : {$$ = "";}
 ;
 returnStatement : RETURN_mark expression ';' {}
                 | RETURN_mark';' {}
