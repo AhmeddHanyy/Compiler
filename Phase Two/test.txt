@@ -1,4 +1,60 @@
-int x = 44;
-x= 55.0;
-int y = 55;
-y = 66;
+int x = 70;
+
+if (x > 50) {
+    x = 100;
+    if (x > 100) {
+        x = 200;
+    }
+    else if (x > 200) {
+        x = 300;
+        if (x > 300) {
+            x = 400;
+        }
+        else if (x > 400) {
+            x = 500;
+        }
+        else {
+            x = 600;
+        }
+    }
+    else if (x > 200) {
+        x = 300;
+    }
+    else {
+        x = 300;
+    }
+} 
+else if (x > 30) {
+    x = 0;
+    const int y = 5;
+}
+else if (x > 10) {
+    x = 10;
+}
+else if (x > 10) {
+    x = 10;
+}
+else if (x > 10) {
+    x = 10;
+}
+else {
+    x = 50;
+    if (x > 50) {
+        x = 100;
+    }
+    else if (x > 100) {
+        x = 200;
+    }
+    else if (x > 200) {
+        x = 300;
+    }
+    else if (x > 300) {
+        x = 400;
+    }
+    else if (x > 400) {
+        x = 500;
+    }
+    else {
+        x = 600;
+    }
+}

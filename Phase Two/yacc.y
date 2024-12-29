@@ -96,8 +96,9 @@ line :
                   }
                 }
               }
-      | CONST  dataType ID ASSIGN expression ';'{ 
-                if (symbolHier.currentScopeTable->lookUp($3, $2)) {
+      | CONST  dataType ID ASSIGN expression ';'{
+                SymbolTable* entryScope = symbolHier.getEntryScope($3);
+                if (entryScope) {
                     yyerror("Variable is already declared\n");
                 } else {
                     // Create an instance of SemanticChecker
@@ -118,11 +119,13 @@ line :
                 }
        }
       | ID ASSIGN expression  ';'{
-              SymbolTableEntry* entry = symbolHier.currentScopeTable->getEntry($1, "");
-              if (!entry) {
+              SymbolTable* entryScope = symbolHier.getEntryScope($1);
+              if (!entryScope) {
                   yyerror("Variable is not declared\n");
-              } else {
+              } 
+              else {
                   // Create an instance of SemanticChecker
+                  SymbolTableEntry* entry = entryScope->getEntry($1);
                   SemanticChecker semanticChecker;
 
                   // Determine the type of the expression
@@ -280,7 +283,7 @@ startScope : '{' {
 ;
 
 endScope : '}' {
-symbolHier.updateCurrentScope(symbolHier.currentScopeTable->parent);                   
+  symbolHier.updateCurrentScope(symbolHier.currentScopeTable->parent);                   
 }
 ;
 /*####################################################################################*/
@@ -291,23 +294,55 @@ if()
   int x; is not allowed there must be {}
 
 */
-ifStatement : ifScope {} //unmatched
-            | ifScope elseScope {} //matched
+ifStatement : ifScope elseIfStatements {} // matched with else if
+            | ifScope {} // unmatched
 ;
 
-ifScope : IF_mark '(' expression ')' scope  {
-  printf("IF statement ends\n");
+elseIfStatements : elseIfStatement elseIfStatements {} // multiple else-if statements
+                 | elseIfStatement {} // single else-if statement
+                 | elseScope {} // matched with else
+;
+
+elseIfStatement : ELSE_IF_mark '(' expression ')' scope {
+    SemanticChecker semanticChecker;
+    if (!semanticChecker.isBool($3)) {
+      yyerror("Condition expression must be of boolean type\n");
+    } else {
+      printf("ELSE IF statement ends\n");
+    }
 }
 ;
-IF_mark : IF {
-            printf("IF statement begins\n");
-};
+
 elseScope : ELSE_mark scope {
-   printf("ELSE statement ends\n");
-};
+    printf("ELSE statement ends\n");
+}
+;
+
+ifScope : IF_mark '(' expression ')' scope {
+    SemanticChecker semanticChecker;
+    if (!semanticChecker.isBool($3)) {
+        printf("Condition expression: %s\n", $3);
+        yyerror("Condition expression must be of boolean type\n");
+    } else {
+        printf("IF statement ends\n");
+    }
+}
+;
+
+IF_mark : IF {
+    printf("IF statement begins\n");
+}
+;
+
+ELSE_IF_mark : ELSE IF {
+    printf("ELSE IF statement begins\n");
+}
+;
+
 ELSE_mark : ELSE {
-        printf("ELSE statement begins\n");
-};
+    printf("ELSE statement begins\n");
+}
+;
 
 /*############################################################################################*/
 //While Loop
