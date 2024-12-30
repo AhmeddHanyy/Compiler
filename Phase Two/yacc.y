@@ -634,23 +634,19 @@ ifScope : IF_mark '(' expression after_expressions_eval')' scope {
         printf("IF statement ends\n");
         quad.addLine();
     }
-}
-;
+};
 
 IF_mark : IF {
     printf("IF statement begins\n");
-}
-;
+};
 
 ELSE_IF_mark : ELSE IF {
     printf("ELSE IF statement begins\n");
-}
-;
+};
 
 ELSE_mark : ELSE {
     printf("ELSE statement begins\n");
-}
-;
+};
 
 /*############################################################################################*/
 //While Loop
@@ -669,15 +665,13 @@ WHILE_mark : WHILE {
 ;
 /*###############################################################################################*/
 //Do WHILE
-doWhile : DO_mark scope WHILE '(' expression ')' {
-printf("Do While Scope Ends\n"); 
-}
-            ;
+doWhile : DO_mark scope WHILE '(' expression after_expressions_eval')' semi_colon_error {
+  quad.endLoop(); 
+};
 
 DO_mark : DO { 
-                printf("Do While Scope begins\n");
-              }
-        ;
+                quad.addLoopStart();
+             };
 
 /*##################################################################################################*/
 //FUNCTIONS
