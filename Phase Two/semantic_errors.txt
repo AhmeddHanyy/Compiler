@@ -1,0 +1,2 @@
+line [1]: Semantic Error: Type mismatch between data type and expression
+

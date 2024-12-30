@@ -1,4 +1,1 @@
-string x = "ayhaga";
-int x = 5;
-int y;
-y = x;
+float x = 5 / 6;

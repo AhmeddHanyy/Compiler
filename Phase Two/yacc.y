@@ -36,16 +36,17 @@
 %token IF ELSE WHILE DO RETURN FOR BREAK CONTINUE SWITCH CASE DEFAULT
 
 //For the token value 
-%token <intValue> INTEGER_VAL
-%token <floatValue> FLOAT_VAL
+%token <stringValue> INTEGER_VAL
+%token <stringValue> FLOAT_VAL
 %token <stringValue> STRING_VAL
 %token <stringValue> CHAR_VAL
-%token <boolValue> BOOL_VAL
+%token <stringValue> BOOL_VAL
 %token <idValue> IDENTIFIER
 
 
 
-%type <stringValue> semi_colon_error dataType program_start_mark factor line start_line_mark ID expression arithExpression compExpression andLogExpression logExpression notLogExpression scope startScope endScope ifStatement ifScope elseScope IF_mark ELSE_mark WHILE_mark DO_mark doWhile function functionSig functionParams defaultParams functionCall functionCallParams epsilon returnStatement forLoop FOR_mark forLoop1 switchCase multiCase singleCase term1 term2 term3
+%type <stringValue> semi_colon_error dataType program_start_mark Comparator factor line start_line_mark ID expression arithExpression compExpression andLogExpression logExpression notLogExpression scope startScope endScope ifStatement ifScope elseScope IF_mark ELSE_mark WHILE_mark DO_mark doWhile function functionSig functionParams defaultParams functionCall functionCallParams epsilon returnStatement forLoop FOR_mark forLoop1 switchCase multiCase singleCase term1 term2 term3
+%type <stringValue> EQ NEQ LT GT LE GE
 
 %%
 
@@ -247,73 +248,218 @@ expression : logExpression{$$ = $1;}
 */
 
 // Logical Expressions
-logExpression : logExpression OR andLogExpression {}
-              | andLogExpression {}
-;
+logExpression : logExpression OR andLogExpression {
+  // Add quad for logical OR operation
+  char* tempVar = quad.generateTempVar();
+  quad.addBinary("OR", tempVar);
+  $$ = tempVar; // result of OR is stored in a temporary variable
+}
+              | andLogExpression {
+  $$ = $1; // propagate the result of the andLogExpression
+}
 
-andLogExpression : andLogExpression AND notLogExpression {}
-                 | notLogExpression {}
-;
+andLogExpression : andLogExpression AND notLogExpression {
+  // Add quad for logical AND operation
+  char* tempVar = quad.generateTempVar();
+  quad.addBinary("AND", tempVar);
+  $$ = tempVar; // result of AND is stored in a temporary variable
+}
+                | notLogExpression {
+  $$ = $1; // propagate the result of the notLogExpression
+}
 
-notLogExpression : NOT notLogExpression {}
-                 | compExpression {}
-;
+notLogExpression : NOT notLogExpression {
+  // Add quad for logical NOT operation
+  char* tempVar = quad.generateTempVar();
+  quad.addUnary("NOT", tempVar);
+  $$ = tempVar; // result of NOT is stored in a temporary variable
+}
+               | compExpression {
+  $$ = $1; // propagate the result of the comparison expression
+}
 
-// Comparison Expressions
+/* Comparison Expressions */
+compExpression : compExpression Comparator arithExpression {
+  // Add quad for comparison operation
+  char* tempVar = quad.generateTempVar();
+  quad.addBinary($2, tempVar);
+  $$ = tempVar; // result of comparison is stored in a temporary variable
+}
+              | arithExpression {
+  $$ = $1; // propagate the result of the arithmetic expression
+}
 
-compExpression : compExpression Comparator arithExpression {}
-               | arithExpression {}
-;
+Comparator : EQ {$$ = $1;}
+           | NEQ  {$$ = $1;}
+           | LT {$$ = $1;}
+           | GT {$$ = $1;}
+           | LE {$$ = $1;}
+           | GE {$$ = $1;} ;
 
-Comparator: EQ {}
-          | NEQ {}
-          | LT {}
-          | GT {}
-          | LE {}
-          | GE {}
-;
+/* Arithmetic Expressions */
+arithExpression : term1 {
+  $$ = $1; // propagate the result of the term1
+}
+          | arithExpression PLUS term1 {
+                  char* right_expr_value, *left_expr_value;
+                  vector <char*> expr_info = splitString($3, ',');
+                  right_expr_value = expr_info[0];
+                  expr_info = splitString($1, ',');
+                  left_expr_value = expr_info[0];
+                  // Check if the types are compatible
+                  SemanticChecker semanticChecker;
+                  if (!semanticChecker.matchTypes(left_expr_value, right_expr_value)) {
+                    semantic_errors("Type mismatch between left and right expressions\n");
+                    $$ = "";
+                  }
+                  else if (strcmp(left_expr_value, "bool") == 0 || strcmp(left_expr_value, "char") == 0) {
+                    semantic_errors("Invalid operation for boolean or character types\n");
+                    $$ = "";
+                  }
+                  else {
+                    char* tempVar = quad.generateTempVar();
+                    quad.addBinary("ADD", tempVar);
+                    $$ = concatenateTwoStrings(right_expr_value, tempVar, ','); // result of addition is stored in a temporary variable
+                  }
+                }
+          | arithExpression MINUS term1 {
+                  char* right_expr_value, *left_expr_value;
+                  vector <char*> expr_info = splitString($3, ',');
+                  right_expr_value = expr_info[0];
+                  expr_info = splitString($1, ',');
+                  left_expr_value = expr_info[0];
+                  // Check if the types are compatible
+                  SemanticChecker semanticChecker;
+                  if (!semanticChecker.matchTypes(left_expr_value, right_expr_value)) {
+                    semantic_errors("Type mismatch between left and right expressions\n");
+                    $$ = "";
+                  }
+                  else if (strcmp(left_expr_value, "bool") == 0 || strcmp(left_expr_value, "char") == 0) {
+                    semantic_errors("Invalid operation for boolean or character types\n");
+                    $$ = "";
+                  }
+                  else {
+                    char* tempVar = quad.generateTempVar();
+                    quad.addBinary("SUB", tempVar);
+                    $$ = concatenateTwoStrings(right_expr_value, tempVar, ','); // result of addition is stored in a temporary variable
+                  }
+                }
 
-// Arithmetic Expressions
+term1 : term2 {
+  $$ = $1; // propagate the result of term2
+}
+      | term1 MULTIPLY term2 {
+                  char* right_expr_value, *left_expr_value;
+                  vector <char*> expr_info = splitString($3, ',');
+                  right_expr_value = expr_info[0];
+                  expr_info = splitString($1, ',');
+                  left_expr_value = expr_info[0];
+                  // Check if the types are compatible
+                  SemanticChecker semanticChecker;
+                  if (!semanticChecker.matchTypes(left_expr_value, right_expr_value)) {
+                    semantic_errors("Type mismatch between left and right expressions\n");
+                    $$ = "";
+                  }
+                  else if (strcmp(left_expr_value, "bool") == 0 || strcmp(left_expr_value, "char") == 0) {
+                    semantic_errors("Invalid operation for boolean or character types\n");
+                    $$ = "";
+                  }
+                  else {
+                    char* tempVar = quad.generateTempVar();
+                    quad.addBinary("MUL", tempVar);
+                    $$ = concatenateTwoStrings(right_expr_value, tempVar, ','); // result of addition is stored in a temporary variable
+                  }
+                }
+      | term1 DIVIDE term2 {
+                  char* right_expr_value, *left_expr_value;
+                  vector <char*> expr_info = splitString($3, ',');
+                  right_expr_value = expr_info[0];
+                  expr_info = splitString($1, ',');
+                  left_expr_value = expr_info[0];
+                  // Check if the types are compatible
+                  SemanticChecker semanticChecker;
+                  if (!semanticChecker.matchTypes(left_expr_value, right_expr_value)) {
+                    semantic_errors("Type mismatch between left and right expressions\n");
+                    $$ = "";
+                  }
+                  else if (strcmp(left_expr_value, "bool") == 0 || strcmp(left_expr_value, "char") == 0) {
+                    semantic_errors("Invalid operation for boolean or character types\n");
+                    $$ = "";
+                  }
+                  else {
+                    char* tempVar = quad.generateTempVar();
+                    quad.addBinary("DIV", tempVar);
+                    $$ = concatenateTwoStrings(right_expr_value, tempVar, ','); // result of addition is stored in a temporary variable
+                  }
+                }
 
-arithExpression : term1 {}
-                | arithExpression PLUS term1 {}
-                | arithExpression MINUS term1 {}
-;
-
-term1 : term2 {}
-      | term1 MULTIPLY term2 {}
-      | term1 DIVIDE term2 {}
-     
-;
-
-term2 : term3 {}
-      | term3 POWER term2 {}
-;
-
-/*
--!x 
-!-x 
-are acceptable in C hehehehe
-*/
-
-term3 : MINUS term3 { 
-//need to check if term3 returned is a number or not(we can make a funct for it)
-//if yes:
-// cast string to a number and multipy by -1 = val
-//then:
-// $$ = val;
+term2 : term3 {
+                  $$ = $1; // propagate the result of term3
+                }
+      | term3 POWER term2 {
+                  char* right_expr_value, *left_expr_value;
+                  vector <char*> expr_info = splitString($3, ',');
+                  right_expr_value = expr_info[0];
+                  expr_info = splitString($1, ',');
+                  left_expr_value = expr_info[0];
+                  // Check if the types are compatible
+                  SemanticChecker semanticChecker;
+                  if (!semanticChecker.matchTypes(left_expr_value, right_expr_value)) {
+                    semantic_errors("Type mismatch between left and right expressions\n");
+                    $$ = "";
+                  }
+                  else if (strcmp(left_expr_value, "bool") == 0 || strcmp(left_expr_value, "char") == 0) {
+                    semantic_errors("Invalid operation for boolean or character types\n");
+                    $$ = "";
+                  }
+                  else {
+                    char* tempVar = quad.generateTempVar();
+                    quad.addBinary("POW", tempVar);
+                    $$ = concatenateTwoStrings(right_expr_value, tempVar, ','); // result of addition is stored in a temporary variable
+                  }
+                }
 
 
 
- }
-      | factor { $$ = $1; }
-;
+/* Factor Handling */
+term3 : MINUS term3 {
+  // Add quad for unary minus operation
+  char* tempVar = quad.generateTempVar();
+  quad.addUnary("NEG", tempVar);
+  $$ = tempVar; // result of unary minus is stored in a temporary variable
+}
+      | factor { 
+  $$ = $1; // propagate the result of the factor
+}
 
-factor : INTEGER_VAL { $$ = $1; }
-       | FLOAT_VAL { $$ = $1;}
-       | CHAR_VAL { $$ = $1;}
-       | STRING_VAL { $$ = $1;}
-       | ID {
+factor : 
+          INTEGER_VAL {
+            // convert integer value to string
+            char* expr_info = concatenateTwoStrings("int", $1, ','); 
+            $$ = expr_info;
+            quad.pushLabel($1); 
+          }
+        | FLOAT_VAL {
+            char* expr_info = concatenateTwoStrings("float", $1, ','); 
+            $$ = expr_info;
+            quad.pushLabel($1);
+          }
+        | CHAR_VAL {
+            char* expr_info = concatenateTwoStrings("char", $1, ','); 
+            $$ = expr_info;
+            quad.pushLabel($1);
+          }
+        | STRING_VAL {
+            char* expr_info = concatenateTwoStrings("string", $1, ','); 
+            $$ = expr_info;
+            quad.pushLabel($1);
+          }
+        | BOOL_VAL {
+            char* expr_info = concatenateTwoStrings("bool", $1, ','); 
+            $$ = expr_info;
+            quad.pushLabel($1);
+          }
+        | ID {
               SymbolTable* entryScope =  symbolHier.getEntryScope($1);
 
               if (!entryScope)
@@ -331,7 +477,7 @@ factor : INTEGER_VAL { $$ = $1; }
                 $$ = concatenateTwoStrings(entry->getValue(), entry->getVariableName(), ',');
               }
             }
-       | '(' logExpression ')' { printf("Processed parenthesis with logical expression.\n"); }
+        | '(' logExpression ')' { printf("Processed parenthesis with logical expression.\n"); }
 ;
 /*###########################################################################################*/
 // Scopes

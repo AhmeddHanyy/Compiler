@@ -43,7 +43,10 @@ void Quadraples::addUnary(char *operation, char *result, bool hasLabel)
 
     // pop the last label from the stack
     if (hasLabel)
+    {
+        res = labels.top();
         popLabel();
+    }
     string arg1 = labels.top();
     popLabel();
 
