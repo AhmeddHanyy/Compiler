@@ -1,5 +1,7 @@
-
-int x = 0;
-do {
+int i;
+for (i = 0; (i < 5) && (i > 0); i = i * 2) {
     int z = 5;
-} while(x < 5);
+    if (i == 0) {
+        string s = "AAAAAAAAAA";
+    }
+}
