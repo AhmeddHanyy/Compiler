@@ -1,2 +1,3 @@
- MOV x  0
- MOV myFunc  int
+ MOV x  "ayhaga"
+ MOV x  5
+ MOV y  x

@@ -6,20 +6,23 @@ using namespace std;
 #include <sstream>
 #include <cstring>
 
-char* ConvertFromNumberToString(int number);
+char *ConvertFromNumberToString(int number);
 
-char* ConvertFromCharToString(char ch);
+char *ConvertFromCharToString(char ch);
 
-char* CompareValues(char* value1, char* value2, char* oper);
+char *CompareValues(char *value1, char *value2, char *oper);
 
-char* ANDing(char* value1, char* value2);
+char *ANDing(char *value1, char *value2);
 
-char* ORing(char* value1, char* value2);
+char *ORing(char *value1, char *value2);
 
-char* NOTing(char* value);
+char *NOTing(char *value);
 
-vector<char*> splitString(const char* str, char delimiter = ' ');
+vector<char *> splitString(const char *str, char delimiter = ' ');
 
-char* concatenateThreeStrings(char* str1, char* str2, char* str3);
+char *concatenateThreeStrings(char *str1, char *str2, char *str3);
 
-char* concatenateTwoStrings(char* str1, char* str2, char delimiter = '\0');
+char *concatenateTwoStrings(char *str1, char *str2, char delimiter = '\0');
+
+// Concatenate a list of strings with a delimiter in reverse order
+char *concatenateList(vector<char *> list, char delimiter = ' ');

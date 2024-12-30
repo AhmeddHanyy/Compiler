@@ -127,6 +127,16 @@ SymbolTableEntry *SymbolTable::getEntry(char *entryName, char *entryType)
     return nullptr; // Return nullptr if no entry found
 }
 
+bool SymbolTable::validateReturnType(char *result)
+{
+    if (returnType)
+    {
+        SemanticChecker checker;
+        return strcmp(returnType, checker.determineType(result)) == 0;
+    }
+    return false;
+}
+
 void SymbolTable::printTable(const string &filepath) const
 {
     // Determine if we should print to a file or the console
