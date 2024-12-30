@@ -14,6 +14,8 @@
   int yylineno = 1;
   int num_scopes = 0;
   SymbolHier symbolHier;
+  char* caseIdentifier;
+  char* switchIdentifier;
   Quadraples quad;
 %}
 
@@ -46,7 +48,7 @@
 
 
 %type <stringValue> semi_colon_error dataType program_start_mark Comparator factor line start_line_mark ID expression arithExpression compExpression andLogExpression logExpression notLogExpression scope startScope endScope ifStatement ifScope elseScope IF_mark ELSE_mark WHILE_mark DO_mark doWhile function functionSig functionParams defaultParams functionCall functionCallParams epsilon returnStatement forLoop FOR_mark forLoop1 switchCase multiCase singleCase term1 term2 term3
-%type <stringValue> EQ NEQ LT GT LE GE
+%type <stringValue> EQ NEQ LT GT LE GE IDCase
 
 %%
 
@@ -694,7 +696,7 @@ functionCall : ID '(' expression functionCallParams  ')'{
                         yyerror(reason);
                       }
                       else {
-                        $$ = concatenateTwoStrings(foundTable->returnType, params, ',');
+                        $$ = foundTable->returnType;
                         printf("Function %s called\n", $1);
                         vector<char*> paramsList = splitString(params, ',');
                         quad.pushLabel(concatenateList(paramsList)); 
@@ -717,7 +719,9 @@ functionCall : ID '(' expression functionCallParams  ')'{
 functionCallParams :  ',' expression functionCallParams {
                           $$ = concatenateTwoStrings($3, $2, ',');
                         }
-                    | epsilon {}
+                    | epsilon {
+                      $$ = $1;
+                    }
 ;
 
 epsilon : {$$ = "";}
@@ -778,20 +782,44 @@ forLoop1 : dataType ID ASSIGN expression {}
 
 /*##################################################################################################*/
 // Switch case
-switchCase : SWITCH '(' ID ')' startScope multiCase endScope {}
+switchCase : SWITCH '(' IDCase ')' startCase multiCase endScope {quad.processCaseIds(switchIdentifier);
+                                                              quad.addLineCase();}
 ;
 
+startCase: startScope {quad.jumpStartCase();}
 
+IDCase: ID {$$ = $1;
+           switchIdentifier = $1;}
 
 multiCase : multiCase singleCase {}
           | singleCase {}
 ;
 
-singleCase : CASE INTEGER_VAL ':' script {}
-           | CASE CHAR_VAL ':' script {}
-           | DEFAULT ':' script {}
+singleCase : CASE caseIdentifierInt begCASE  ':' script {quad.jumpEndCase();}
+           | CASE caseIdentifierChar begCASE  ':' script {quad.jumpEndCase();}
+           | DEFAULT caseIdentifierDef begCASE ':' script {quad.jumpEndCase();}
 ;
+caseIdentifierInt : INTEGER_VAL {
+                                  caseIdentifier = $1;
+                                  quad.insertCaseID(caseIdentifier); // for comparing
+                                  }
+                                  
+                  ;
 
+caseIdentifierChar : CHAR_VAL {
+                                      caseIdentifier = $1;
+                                      quad.insertCaseID(caseIdentifier); 
+                                      }
+
+
+caseIdentifierDef : DEFAULT { caseIdentifier = "default";}
+                  ;
+
+begCASE: {
+
+quad.insertCase(caseIdentifier);
+
+}
 
 %%
 
