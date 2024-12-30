@@ -133,6 +133,7 @@ class Ui_Dialog(object):
         self.gridLayout.addLayout(self.horizontalLayout_2, 0, 0, 1, 1)
 
         # Buttons layout
+        
         self.gridLayout_2 = QtWidgets.QGridLayout()
         self.gridLayout_2.setObjectName("gridLayout_2")
         self.Compile_btn = QtWidgets.QPushButton(Dialog)
@@ -180,9 +181,15 @@ class MyDialog(QDialog, Ui_Dialog):
             subprocess.run(["./a.exe", "input.txt"])
 
             # Read the result from output.txt and display it in result_text QTextEdit
+            res = ""
+            res += "Output:\n"
             with open("output.txt", "r") as file:
                 result_text = file.read()
-                self.result_text.setText(result_text)
+                res += result_text
+                # self.result_text.setText(result_text)
+            
+            self.result_text.setText(res)
+            
         except FileNotFoundError:
             print("Error: a.exe or output.txt not found!")
 
