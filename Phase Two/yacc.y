@@ -112,11 +112,15 @@ line :
                   else
                   {
                     symbolHier.addEntryToCurrentScope($2, $1, expr_value, true, false);
+                    printf("AAAAAAAAAAAAAAAAAAAAAA\n");
                     if (strcmp(expr_name, "") != 0) {
+                      printf("BBBBBBBBBBBBBBBBBBBBBBBBB");
                       quad.addUnary("MOV", expr_name, true);
                     } else {
+                      printf("CCCCCCCCCCCCCCCCCCCCCCCCCCCCC");
                       quad.addUnary("MOV", expr_value);
                     }
+                    printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
                     quad.resetEntryCount();
                   }
                 }
@@ -423,14 +427,28 @@ term2 : term3 {
 
 /* Factor Handling */
 term3 : MINUS term3 {
-  // Add quad for unary minus operation
-  char* tempVar = quad.generateTempVar();
-  quad.addUnary("NEG", tempVar);
-  $$ = tempVar; // result of unary minus is stored in a temporary variable
-}
+          char* expr_value, *expr_name;
+          vector <char*> expr_info = splitString($2, ',');
+          expr_value = expr_info[0];
+          expr_name = expr_info[1];
+
+          // check if it is a float / int
+          SemanticChecker semanticChecker;
+          printf("-----Expression Value: %s\n", expr_value);
+          char* expr_type = semanticChecker.determineType(expr_value);
+          if (strcmp(expr_type, "float") != 0 && strcmp(expr_type, "int") != 0) {
+            semantic_errors("Invalid operation for non-numeric types\n");
+            $$ = "";
+          } else {
+            char* tempVar = quad.generateTempVar();
+            quad.addUnary("NEG", tempVar);
+            quad.pushLabel(tempVar);
+            $$ = concatenateTwoStrings(expr_value, tempVar, ',');
+          }
+        }
       | factor { 
-  $$ = $1; // propagate the result of the factor
-}
+          $$ = $1; // propagate the result of the factor
+        }
 
 factor : 
           INTEGER_VAL {
@@ -477,7 +495,7 @@ factor :
                 $$ = concatenateTwoStrings(entry->getValue(), entry->getVariableName(), ',');
               }
             }
-        | '(' logExpression ')' { printf("Processed parenthesis with logical expression.\n"); }
+        | '(' logExpression ')' { $$ = $2; }
 ;
 /*###########################################################################################*/
 // Scopes

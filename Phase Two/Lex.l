@@ -13,8 +13,8 @@ DIGIT       [0-9]
 LETTER      [a-zA-Z]
 IDENTIFIER  {LETTER}({LETTER}|{DIGIT}|_)*
 
-INTEGER_VAL  (0|[1-9][0-9]*)
-FLOAT_VAL    [0-9]+\.[0-9]+
+INTEGER_VAL  -?(0|[1-9][0-9]*)
+FLOAT_VAL    -?[0-9]+\.[0-9]+
 CHAR_VAL     \'.\'
 STRING_VAL   \"[^\"]*\"
 BOOL_VAL     (0|1|true|false)\b

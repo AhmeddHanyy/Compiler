@@ -1,2 +1,2 @@
-line [1]: Semantic Error: Type mismatch between data type and expression
-
+line [4]: Semantic Warning: Variable z is declared but not used
+line [4]: Semantic Warning: Variable y is declared but not used
