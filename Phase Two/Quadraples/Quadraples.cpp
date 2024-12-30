@@ -49,9 +49,7 @@ void Quadraples::addUnary(char *operation, char *result, bool hasLabel)
         popLabel();
     }
     string arg1 = labels.top();
-    printf("_________________________");
     popLabel();
-    printf("_________________________");
     // create a new entry
     insertEntry(op, arg1, "", res);
     printf("Inserted entry: %s %s %s %s\n", op.c_str(), arg1.c_str(), "", res.c_str());
@@ -83,6 +81,7 @@ void Quadraples::addBranch(char *jumpType)
     string line = generateLabel("Line", lineCount);
     incEntryCount();
     lines.push(line);
+    ++lineCount;
 
     // pop the last two labels from the stack
     string arg2 = labels.top();
@@ -92,17 +91,17 @@ void Quadraples::addBranch(char *jumpType)
 
     // check the jump type and insert the appropriate entry
     string jmp;
-    if (jumpType == ">")
+    if (strcmp(jumpType, ">") == 0)
         jmp = "JLE";
-    else if (jumpType == "<")
+    else if (strcmp(jumpType, "<") == 0)
         jmp = "JGE";
-    else if (jumpType == "==")
+    else if (strcmp(jumpType, "==") == 0)
         jmp = "JNE";
-    else if (jumpType == "!=")
+    else if (strcmp(jumpType, "!=") == 0)
         jmp = "JE";
-    else if (jumpType == ">=")
+    else if (strcmp(jumpType, ">=") == 0)
         jmp = "JLT";
-    else if (jumpType == "<=")
+    else if (strcmp(jumpType, "<=") == 0)
         jmp = "JGT";
 
     insertEntry("CMP", arg1, arg2, "");

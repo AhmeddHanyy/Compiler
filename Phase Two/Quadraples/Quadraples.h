@@ -44,7 +44,6 @@ private:
     int loopCount = 0;
     stack<string> labels;
     stack<string> lines;                 // for branching statements line1: line2: etc
-    list<string> lines_list;             // we use it to pop back the lines for the if else statements
     vector<list<string>> lines_list_vec; // we use it to pop back the lines for the if else statements to handle nested if else
     stack<string> loops;                 // for loops
     /// Switch case

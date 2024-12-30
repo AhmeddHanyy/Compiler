@@ -1,6 +1,12 @@
+ MOV h  8
+ MOV y  9
+ CMP h 5 
+ JNE   Line0
+ MOV z  10
+ Line0:   
+ MOV z  11
+ CMP 11 12 
+ JNE   Line1
+ MOV f  13
+ Line1:   
  MOV x  -5
- NEG x  T0
- MOV y  T0
- ADD 5 6 T0
- NEG T0  T1
- MOV z  T1

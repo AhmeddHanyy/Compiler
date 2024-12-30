@@ -284,10 +284,25 @@ notLogExpression : NOT notLogExpression {
 
 /* Comparison Expressions */
 compExpression : compExpression Comparator arithExpression {
-  // Add quad for comparison operation
-  char* tempVar = quad.generateTempVar();
-  quad.addBinary($2, tempVar);
-  $$ = tempVar; // result of comparison is stored in a temporary variable
+  char* right_expr_value, *left_expr_value;
+  vector <char*> expr_info = splitString($3, ',');
+  right_expr_value = expr_info[0];
+  expr_info = splitString($1, ',');
+  left_expr_value = expr_info[0];
+  // Check if the types are compatible
+  SemanticChecker semanticChecker;
+  if (!semanticChecker.matchTypes(left_expr_value, right_expr_value)) {
+    semantic_errors("Type mismatch between left and right expressions\n");
+    $$ = "";
+  }
+  else if (strcmp(left_expr_value, "bool") == 0 || strcmp(left_expr_value, "char") == 0 || strcmp(left_expr_value, "string") == 0) {
+    semantic_errors("Invalid operation for boolean or character types\n");
+    $$ = "";
+  }
+  else {
+    // Add quad for comparison operation
+    quad.addBranch($2);
+  }
 }
               | arithExpression {
   $$ = $1; // propagate the result of the arithmetic expression
@@ -298,12 +313,13 @@ Comparator : EQ {$$ = $1;}
            | LT {$$ = $1;}
            | GT {$$ = $1;}
            | LE {$$ = $1;}
-           | GE {$$ = $1;} ;
+           | GE {$$ = $1;}
 
 /* Arithmetic Expressions */
-arithExpression : term1 {
-  $$ = $1; // propagate the result of the term1
-}
+arithExpression : 
+            term1 {
+              $$ = $1; // propagate the result of the term1
+             }
           | arithExpression PLUS term1 {
                   char* right_expr_value, *left_expr_value;
                   vector <char*> expr_info = splitString($3, ',');
@@ -350,8 +366,8 @@ arithExpression : term1 {
                 }
 
 term1 : term2 {
-  $$ = $1; // propagate the result of term2
-}
+          $$ = $1; // propagate the result of term2
+        }
       | term1 MULTIPLY term2 {
                   char* right_expr_value, *left_expr_value;
                   vector <char*> expr_info = splitString($3, ',');
@@ -422,10 +438,6 @@ term2 : term3 {
                     $$ = concatenateTwoStrings(right_expr_value, tempVar, ','); // result of addition is stored in a temporary variable
                   }
                 }
-
-
-
-/* Factor Handling */
 term3 : MINUS term3 {
           char* expr_value, *expr_name;
           vector <char*> expr_info = splitString($2, ',');
@@ -544,12 +556,14 @@ elseIfStatement : ELSE_IF_mark '(' expression ')' scope {
       semantic_errors("Condition expression must be of boolean type\n");
     } else {
       printf("ELSE IF statement ends\n");
+      quad.addLine();
     }
 }
 ;
 
 elseScope : ELSE_mark scope {
     printf("ELSE statement ends\n");
+    quad.addLine();
 }
 ;
 
@@ -560,6 +574,7 @@ ifScope : IF_mark '(' expression ')' scope {
         semantic_errors("Condition expression must be of boolean type\n");
     } else {
         printf("IF statement ends\n");
+        quad.addLine();
     }
 }
 ;
@@ -813,7 +828,7 @@ void semantic_warns(const char *msg) {
           return;
       }
 
-      fprintf(semantic_file, "line [%d]: Semantic Warning: %s\n", yylineno, msg); 
+      fprintf(semantic_file, "Semantic Warning: %s\n", msg); 
 }
 
 int main(int argc, char** argv){

@@ -182,7 +182,6 @@ class MyDialog(QDialog, Ui_Dialog):
 
             # Read the result from output.txt and display it in result_text QTextEdit
             res = ""
-            res += "Output:\n"
             with open("output.txt", "r") as file:
                 result_text = file.read()
                 res += result_text
