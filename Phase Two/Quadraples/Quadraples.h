@@ -62,9 +62,11 @@ public:
     void insertVariable(string name);
     void pushLabel(char *label);
     void popLabel();
+    char *getTopLabel();
+    int getLabelsLength();
     void addUnary(char *operation, char *result, bool hasLabel = false);
     void addBinary(char *operation, char *result);
-    void addBranch(char *jumpType);
+    char *addBranch(char *jumpType);
     void addLine();
     void addNestedLine();
 

@@ -45,7 +45,7 @@
 
 
 
-%type <stringValue> semi_colon_error dataType program_start_mark Comparator factor line start_line_mark ID expression arithExpression compExpression andLogExpression logExpression notLogExpression scope startScope endScope ifStatement ifScope elseScope IF_mark ELSE_mark WHILE_mark DO_mark doWhile function functionSig functionParams defaultParams functionCall functionCallParams epsilon returnStatement forLoop FOR_mark forLoop1 switchCase multiCase singleCase term1 term2 term3
+%type <stringValue> semi_colon_error dataType after_expressions_eval program_start_mark Comparator factor line start_line_mark ID expression arithExpression compExpression andLogExpression logExpression notLogExpression scope startScope endScope ifStatement ifScope elseScope IF_mark ELSE_mark WHILE_mark DO_mark doWhile function functionSig functionParams defaultParams functionCall functionCallParams epsilon returnStatement forLoop FOR_mark forLoop1 switchCase multiCase singleCase term1 term2 term3
 %type <stringValue> EQ NEQ LT GT LE GE
 
 %%
@@ -328,42 +328,48 @@ notLogExpression : NOT notLogExpression {
             $$ = concatenateTwoStrings(expr_value, tempVar, ',');
           }
         }
-               | compExpression {
-  $$ = $1; // propagate the result of the comparison expression
-}
+      | compExpression {
+        $$ = $1; 
+        printf("compExpression: %s\n", $1);
+      }
 
 /* Comparison Expressions */
 compExpression : compExpression Comparator arithExpression {
-  char* right_expr_value, *left_expr_value;
-  vector <char*> expr_info = splitString($3, ',');
-  right_expr_value = expr_info[0];
-  expr_info = splitString($1, ',');
-  left_expr_value = expr_info[0];
-  // Check if the types are compatible
-  SemanticChecker semanticChecker;
-  if (!semanticChecker.matchTypes(left_expr_value, right_expr_value)) {
-    semantic_errors("Type mismatch between left and right expressions\n");
-    $$ = "";
-  }
-  else if (strcmp(left_expr_value, "char") == 0 || strcmp(left_expr_value, "string") == 0) {
-    semantic_errors("Invalid operation for boolean or character types\n");
-    $$ = "";
-  }
-  else {
-    // Add quad for comparison operation
-    quad.addBranch($2);
-  }
-}
+                char* right_expr_value, *left_expr_value;
+                vector <char*> expr_info = splitString($3, ',');
+                right_expr_value = expr_info[0];
+                expr_info = splitString($1, ',');
+                left_expr_value = expr_info[0];
+
+                printf("|||Left Expression: %s\n", left_expr_value);
+                printf("|||Right Expression: %s\n", right_expr_value);
+
+                // Check if the types are compatible
+                SemanticChecker semanticChecker;
+                if (!semanticChecker.matchTypes(left_expr_value, right_expr_value)) {
+                  semantic_errors("Type mismatch between left and right expressions\n");
+                  $$ = "";
+                }
+                else if (strcmp(left_expr_value, "bool") != 0 && strcmp(left_expr_value, "int") != 0 && strcmp(left_expr_value, "float") != 0) {
+                  semantic_errors("Invalid operation for non-numeric/boolean types\n");
+                  $$ = "";
+                }
+                else {
+                  char* tempVar = quad.generateTempVar();
+                  quad.addBinary($2, tempVar);
+                  $$ = concatenateTwoStrings("bool", tempVar, ','); // result of addition is stored in a temporary variable
+                }
+              }
               | arithExpression {
   $$ = $1; // propagate the result of the arithmetic expression
 }
 
-Comparator : EQ {$$ = $1;}
-           | NEQ  {$$ = $1;}
-           | LT {$$ = $1;}
-           | GT {$$ = $1;}
-           | LE {$$ = $1;}
-           | GE {$$ = $1;}
+Comparator : EQ {$$ = "EQ";}
+           | NEQ  {$$ = "NEQ";}
+           | LT {$$ = "LT";}
+           | GT {$$ = "GT";}
+           | LE {$$ = "LE";}
+           | GE {$$ = "GE";}
 
 /* Arithmetic Expressions */
 arithExpression : 
@@ -648,12 +654,17 @@ ELSE_mark : ELSE {
 
 /*############################################################################################*/
 //While Loop
-whileLoop : WHILE_mark '(' expression ')' scope {
-printf("While loop Ends\n"); 
+whileLoop : WHILE_mark '(' expression after_expressions_eval ')' scope {
+  quad.endLoop(); 
+};
+
+after_expressions_eval : {
+  quad.pushLabel("true");
+  quad.addBranch("==");
 }
-;
+
 WHILE_mark : WHILE {
-printf("While loop starts\n"); 
+  quad.addLoopStart();
 }
 ;
 /*###############################################################################################*/

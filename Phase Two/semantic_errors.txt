@@ -1,1 +1,0 @@
-Semantic Warning: Variable w is declared but not used

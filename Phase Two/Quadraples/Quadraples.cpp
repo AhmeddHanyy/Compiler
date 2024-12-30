@@ -62,7 +62,7 @@ void Quadraples::addBinary(char *operation, char *result)
     pushLabel(strdup(res.c_str()));
 }
 
-void Quadraples::addBranch(char *jumpType)
+char *Quadraples::addBranch(char *jumpType)
 {
     // convert char* to string
     string jump(jumpType);
@@ -96,6 +96,7 @@ void Quadraples::addBranch(char *jumpType)
 
     insertEntry("CMP", arg1, arg2, "");
     insertEntry(jmp, "", "", line);
+    return strdup(line.c_str());
 }
 
 void Quadraples::addLine()
@@ -126,6 +127,7 @@ void Quadraples::addLoopStart()
 
 void Quadraples::endLoop()
 {
+    printf("loops.empty(): %d, lines.empty(): %d\n", loops.empty(), lines.empty());
     if (loops.empty() || lines.empty())
         return;
     string loop = loops.top();
@@ -243,6 +245,17 @@ void Quadraples::popLabel()
         temp.pop();
     }
     printf("\n---------\n");
+}
+
+char *Quadraples::getTopLabel()
+{
+    string label = labels.top();
+    return strdup(label.c_str());
+}
+
+int Quadraples::getLabelsLength()
+{
+    return labels.size();
 }
 
 void Quadraples::incEntryCount()
