@@ -1,0 +1,2 @@
+line [5]: Semantic Warning: Variable y is declared but not used
+line [5]: Semantic Warning: Variable x is declared but not used

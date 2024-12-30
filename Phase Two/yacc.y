@@ -9,7 +9,8 @@
   void semantic_errors(const char *s);
   void semantic_warns(const char *s); 
   extern FILE* yyin;                          
-  extern FILE* yyout;  
+  extern FILE* yyout;
+  FILE *semantic_file;  
   int yylineno = 1;
   int num_scopes = 0;
   SymbolHier symbolHier;
@@ -82,7 +83,6 @@ line :
                 }
                 
               }
-
       | dataType ID ASSIGN expression semi_colon_error {
                 SymbolTable* entryScope = symbolHier.getEntryScope($2, $1);
                 if (entryScope) {
@@ -91,45 +91,68 @@ line :
                   // Create an instance of SemanticChecker
                   SemanticChecker semanticChecker;
 
+                  printf("Variable Type: %s\n", $1);
+                  printf("Expression: %s\n", $4);
+
+                  char* expr_value, *expr_name="";
+                  vector <char*> expr_info = splitString($4, ',');
+
+                  expr_value = expr_info[0];
+                  if (expr_info.size() > 1) expr_name = expr_info[1];
+
+                  printf("Expression Value: %s\n", expr_value);
+                  printf("Expression Name: %s\n", expr_name);
+
                   // Check if the types are compatible
-                  if (!semanticChecker.matchTypes($1, $4))
+                  if (!semanticChecker.matchTypes($1, expr_value))
                   {
                     semantic_errors("Type mismatch between data type and expression\n");
                   }
                   else
                   {
-                    printf("Assigned value to %s\n", $2);
-                    // Add the entry to the current scope
-                    symbolHier.addEntryToCurrentScope($2, $1, $4, true, false);
-                    printf("Added entry to current scope\n");
-                    // Use quads to assign the value to the variable
-                    quad.addUnary("MOV", $4);
-                    quad.popLabel();
+                    symbolHier.addEntryToCurrentScope($2, $1, expr_value, true, false);
+                    if (strcmp(expr_name, "") != 0) {
+                      quad.addUnary("MOV", expr_name, true);
+                    } else {
+                      quad.addUnary("MOV", expr_value);
+                    }
                     quad.resetEntryCount();
                   }
                 }
                  
               }
       | CONST  dataType ID ASSIGN expression semi_colon_error{
-                SymbolTable* entryScope = symbolHier.getEntryScope($3);
+                SymbolTable* entryScope = symbolHier.getEntryScope($3, $2);
                 if (entryScope) {
                     semantic_errors("Variable is already declared\n");
                 } else {
                     // Create an instance of SemanticChecker
                     SemanticChecker semanticChecker;
 
+                    printf("Variable Type: %s\n", $2);
+                    printf("Expression: %s\n", $5);
+
+                    char* expr_value, *expr_name="";
+                    vector <char*> expr_info = splitString($5, ',');
+
+                    expr_value = expr_info[0];
+                    if (expr_info.size() > 1) expr_name = expr_info[1];
+
+                    printf("Expression Value: %s\n", expr_value);
+                    printf("Expression Name: %s\n", expr_name);
+
                     // Check if the types are compatible
-                    if (!semanticChecker.matchTypes($2, $5)) {
+                    if (!semanticChecker.matchTypes($2, expr_value)) {
                         semantic_errors("Type mismatch between data type and expression\n");
                     } else {
-                        // Assuming compatible, add the entry to the current scope as a constant
-                        symbolHier.addEntryToCurrentScope($3, $2, $5, true, true);
-                        printf("Assigned constant value to %s\n", $3);
-                        // Use quads to assign the value to the variable
-                        quad.addUnary("MOV", $5);
-                        quad.popLabel();
+                        symbolHier.addEntryToCurrentScope($3, $2, expr_value, true, true);
+                        if (strcmp(expr_name, "") != 0) {
+                          quad.addUnary("MOV", expr_name, true);
+                        } else {
+                          quad.addUnary("MOV", expr_value);
+                        }
                         quad.resetEntryCount();
-                    }
+                      }
                 }
                
        }
@@ -139,30 +162,39 @@ line :
                   semantic_errors("Variable is not declared\n");
               } 
               else {
-                  // Create an instance of SemanticChecker
-                  SymbolTableEntry* entry = entryScope->getEntry($1);
                   SemanticChecker semanticChecker;
+                  char* expr_value, *expr_name="";
+                  vector <char*> expr_info = splitString($3, ',');
 
-                  // Check if the variable is a constant
-                  if (entry->getIsConstant()) {
-                      semantic_errors("Cannot assign to a constant variable\n");
-                  } else {
-                      // Check if the types are compatible
-                      if (!semanticChecker.matchTypes(entry->getVariableType(), $3)) {
-                          semantic_errors("Type mismatch between variable and expression\n");
+                  expr_value = expr_info[0];
+                  if (expr_info.size() > 1) expr_name = expr_info[1];
+
+                  // Create an instance of SemanticChecker
+                  SymbolTable* entryScope = symbolHier.getEntryScope($1, semanticChecker.determineType(expr_value));
+                  if (!entryScope) {
+                      semantic_errors("Type mismatch between variable and expression\n");
+                  }
+                  else {
+                    SymbolTableEntry* entry = entryScope->getEntry($1);
+
+                    // Check if the variable is a constant
+                    if (entry->getIsConstant()) {
+                        semantic_errors("Cannot assign to a constant variable\n");
+                    } else { 
+                      // Assuming compatible, update the value of the variable
+                      entry->setValue(expr_value);
+                      entry->setIsInitialized(true);
+                      // Use quads to assign the value to the variable
+                      if (strcmp(expr_name, "") != 0) {
+                        quad.addUnary("MOV", expr_name, true);
                       } else {
-                          // Assuming compatible, update the value of the variable
-                          entry->setValue($3);
-                          entry->setIsInitialized(true);
-                          printf("Assigned value to %s\n", $1);
-                          // Use quads to assign the value to the variable
-                          quad.addUnary("MOV", $3);
-                          quad.popLabel();
-                          quad.resetEntryCount();
+                        quad.addUnary("MOV", expr_value);
                       }
+                      quad.resetEntryCount();
+                    }
                   }
               }
-             
+              
             }
       | scope {}
       | ifStatement {}
@@ -202,7 +234,11 @@ ID : IDENTIFIER {
 
 /*#########################################################################*/
 expression : logExpression{$$ = $1;}
-           | functionCall{$$ = $1;}
+           | functionCall {
+                            $$ = $1;
+                            char* label = quad.generateTempVar();
+                            quad.addBinary("CALL", label);
+                          }
 ;
 
 /*
@@ -245,8 +281,8 @@ arithExpression : term1 {}
 ;
 
 term1 : term2 {}
-     | term1 MULTIPLY term2 {}
-     | term1 DIVIDE term2 {}
+      | term1 MULTIPLY term2 {}
+      | term1 DIVIDE term2 {}
      
 ;
 
@@ -280,10 +316,11 @@ factor : INTEGER_VAL { $$ = $1; }
        | ID {
               SymbolTable* entryScope =  symbolHier.getEntryScope($1);
 
-              if(!entryScope)
+              if (!entryScope)
               {
                 semantic_errors("Variable is not declared\n");
-              }else{
+              }
+              else {
                 //variable is declared and we have its scope table now lets get the entry from the table
                 SymbolTableEntry* entry = entryScope->getEntry($1);
                 if(!entry->getIsInitialized())
@@ -291,7 +328,7 @@ factor : INTEGER_VAL { $$ = $1; }
                   semantic_errors("Variable is not initiliazed\n");
                 }
                 entry->setIsAccessed(true);
-                $$ = entry->getValue();
+                $$ = concatenateTwoStrings(entry->getValue(), entry->getVariableName(), ',');
               }
             }
        | '(' logExpression ')' { printf("Processed parenthesis with logical expression.\n"); }
@@ -406,6 +443,9 @@ DO_mark : DO {
 function : functionSigStart functionSig scope {
   printf("Function ends\n");
   symbolHier.updateCurrentScope(symbolHier.currentScopeTable->parent);
+  // Use quads to add the function end label
+  quad.insertEntry("RET", "", "", "");
+  quad.isFunctionFlag = 0;
 }
 ;
 
@@ -425,29 +465,35 @@ if(symbolHier.currentScopeTable->lookUp($3,$2))
 }
 //check dataType and expression type compatible or not
 
-//Assuming compatible then:
-// symbolHier.addEntryToCurrentScope($2,$1,expression,true,false);
-            }
+                  //Assuming compatible then:
+                  // symbolHier.addEntryToCurrentScope($2,$1,expression,true,false);
+              }
             |  '('')' { printf("Starting params list\n");}
 ; 
 // returnType: dataType{}
 //           | VOID{}
 // ;
 functionSigStart: dataType ID {
-  SymbolTable* functionTable = new SymbolTable($2, symbolHier.currentScopeTable,$1);
+  SymbolTable* functionTable = new SymbolTable($2, symbolHier.currentScopeTable, $1);
   //add table as a child to current
   symbolHier.currentScopeTable->addChild(functionTable);
   symbolHier.addFunctionTable(functionTable);
   //update current scope
   symbolHier.updateCurrentScope(functionTable);
+  // Use quads to add the function label
+  quad.isFunctionFlag = 1;
+  quad.insertEntry(concatenateTwoStrings($2,":"),"","","");
 }
 | VOID ID {
-SymbolTable* functionTable = new SymbolTable($2, symbolHier.currentScopeTable,(char*)"void");
-//add table as a child to current
-symbolHier.currentScopeTable->addChild(functionTable);
-symbolHier.addSymbolTable(functionTable);
-//update current scope
-symbolHier.updateCurrentScope(functionTable);
+  SymbolTable* functionTable = new SymbolTable($2, symbolHier.currentScopeTable,(char*)"void");
+  //add table as a child to current
+  symbolHier.currentScopeTable->addChild(functionTable);
+  symbolHier.addSymbolTable(functionTable);
+  //update current scope
+  symbolHier.updateCurrentScope(functionTable);
+  // Use quads to add the function label
+  quad.isFunctionFlag = 1;
+  quad.insertEntry(concatenateTwoStrings($2,":"),"","","");
 }
 ;
 
@@ -456,10 +502,10 @@ if(symbolHier.currentScopeTable->lookUp($3,$2))
 {
   semantic_errors("Variable is already in param list\n");
 }else{
-  symbolHier.addEntryToCurrentScope($3,$2,"-0",true,false);
+  symbolHier.addEntryToCurrentScope($3,$2,$3,true,false);
 }
 
-}
+                  }
                | defaultParams {}
 ;
 defaultParams : ',' dataType ID ASSIGN expression defaultParams  {
@@ -469,46 +515,72 @@ if(symbolHier.currentScopeTable->lookUp($3,$2))
 }
 //check dataType and expression type compatible or not
 
-//Assuming compatible then:
-// symbolHier.addEntryToCurrentScope($2,$1,expression,true,false);
-
-
-}
+                      //Assuming compatible then:
+                      // symbolHier.addEntryToCurrentScope($2,$1,expression,true,false);
+                    }
               | epsilon {}
 ;
 //Second function call
 
 functionCall : ID '(' expression functionCallParams  ')'{
-
-printf("--params: %s expression: %s\n",$4,$3);
-char* params = concatenateTwoStrings($4,$3,',');
-printf("--params: %s\n",params);
-char* reason = nullptr;
-SymbolTable* foundTable = symbolHier.checkFunctionExists($1, params,reason);
-if(!foundTable){
-  semantic_errors(reason);
-}else{
-  //found
-  $$ = foundTable->returnType;
-}
-
-
-}
-             | ID '(' ')'{printf("Calling function %s\n",$1);}
+                      char* params = concatenateTwoStrings($4,$3,',');
+                      char* reason = nullptr;
+                      SymbolTable* foundTable = symbolHier.checkFunctionExists($1, params, reason);
+                      if (!foundTable){
+                        yyerror(reason);
+                      }
+                      else {
+                        $$ = concatenateTwoStrings(foundTable->returnType, params, ',');
+                        printf("Function %s called\n", $1);
+                        vector<char*> paramsList = splitString(params, ',');
+                        quad.pushLabel(concatenateList(paramsList)); 
+                      }
+                    }
+             | ID '(' ')' {
+                      char* reason = nullptr;
+                      SymbolTable* foundTable = symbolHier.checkFunctionExists($1, nullptr, reason);
+                      if (!foundTable){
+                        semantic_errors(reason);
+                      }
+                      else {
+                        $$ = foundTable->returnType;
+                        printf("Function %s called\n", $1);
+                        quad.pushLabel($1);
+                      }
+                    }
 ;
 
 functionCallParams :  ',' expression functionCallParams {
-$$ = concatenateTwoStrings($3, $2, ',');
-}
-                   | epsilon {}
+                          $$ = concatenateTwoStrings($3, $2, ',');
+                        }
+                    | epsilon {}
 ;
 
 epsilon : {$$ = "";}
 ;
-returnStatement : RETURN_mark expression ';' {}
-                | RETURN_mark';' {}
+returnStatement : RETURN_mark expression ';' {
+                    SymbolTable* funcScope = symbolHier.currentScopeTable->parent;
+                    if (!funcScope || funcScope->returnType == nullptr) {
+                      yyerror("Return statement not allowed in this scope\n");
+                    } else if (!funcScope->validateReturnType($2)) {
+                      yyerror("Return type does not match the function return type\n");
+                    } else {
+                      printf("Return statement ends\n");
+                      $$ = $2;
+                    }
+                  }
+                | RETURN_mark';' {
+                    if (symbolHier.currentScopeTable->returnType == nullptr) {
+                      yyerror("Return statement not allowed in this scope\n");
+                    } else if (!symbolHier.currentScopeTable->validateReturnType("void")) {
+                      yyerror("Return type does not match the function return type\n");
+                    } else {
+                      printf("Return statement ends\n");
+                      $$ = "";
+                    }
+                }
 ;
-RETURN_mark: RETURN {printf("returning from function\n");}
+RETURN_mark: RETURN {}
 
 /*##################################################################################################*/
 // For Loop
@@ -562,31 +634,28 @@ singleCase : CASE INTEGER_VAL ':' script {}
 void yyerror(const char *msg){
   fprintf(yyout, "line [%d]: Error: %s\n", yylineno, msg);
 }
-void semantic_errors(const char *msg) {
-      FILE *semantic_file = fopen("semantic_errors.txt", "a");
+void semantic_errors(const char *msg) {  
       if (semantic_file == NULL) {
           fprintf(stderr, "Error: Could not open semantic_errors.txt for writing\n");
           return;
       }
 
       fprintf(semantic_file, "line [%d]: Semantic Error: %s\n", yylineno, msg); 
-      fclose(semantic_file); // Close the file
 }
 
 void semantic_warns(const char *msg) {
-      FILE *semantic_file = fopen("semantic_errors.txt", "a");
       if (semantic_file == NULL) {
           fprintf(stderr, "Error: Could not open semantic_errors.txt for writing\n");
           return;
       }
 
       fprintf(semantic_file, "line [%d]: Semantic Warning: %s\n", yylineno, msg); 
-      fclose(semantic_file); // Close the file
 }
 
 int main(int argc, char** argv){
 
   FILE *file = fopen(argv[1], "r");
+  semantic_file = fopen("semantic_errors.txt", "w");
 
   if(file == NULL){
     yyerror("File not found!\n");

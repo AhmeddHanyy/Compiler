@@ -24,29 +24,34 @@ void Quadraples::insertEntry(const string &operation, const string &arg1, const 
     incEntryCount();
 }
 
-void Quadraples::pushLabel(char *label)
-{
-    string labelStr(label);
-    labels.push(labelStr);
-}
-
-void Quadraples::addUnary(char *operation, char *result)
+void Quadraples::addUnary(char *operation, char *result, bool hasLabel)
 {
     // convert char* to string
     string res(result);
     string op(operation);
     printf("Adding unary operation: %s %s\n", operation, result);
 
+    // print labels
+    printf("--Labels stack:--\n");
+    stack<string> temp = labels;
+    while (!temp.empty())
+    {
+        printf("%s ", temp.top().c_str());
+        temp.pop();
+    }
+    printf("\n");
+
     // pop the last label from the stack
+    if (hasLabel)
+        popLabel();
     string arg1 = labels.top();
-    labels.pop();
-    printf("Popped label: %s\n", arg1.c_str());
+    popLabel();
 
     // create a new entry
     insertEntry(op, arg1, "", res);
     printf("Inserted entry: %s %s %s %s\n", op.c_str(), arg1.c_str(), "", res.c_str());
-    labels.push(res);
-    printf("Pushed label: %s\n", res.c_str());
+    // pushLabel(res);
+    // printf("Pushed label: %s\n", res.c_str());
 }
 
 void Quadraples::addBinary(char *operation, char *result)
@@ -57,13 +62,13 @@ void Quadraples::addBinary(char *operation, char *result)
 
     // pop the last two labels from the stack
     string arg2 = labels.top();
-    labels.pop();
+    popLabel();
     string arg1 = labels.top();
-    labels.pop();
+    popLabel();
 
     // create a new entry
     insertEntry(op, arg1, arg2, res);
-    labels.push(res);
+    pushLabel(strdup(res.c_str()));
 }
 
 void Quadraples::addBranch(char *jumpType)
@@ -78,9 +83,9 @@ void Quadraples::addBranch(char *jumpType)
 
     // pop the last two labels from the stack
     string arg2 = labels.top();
-    labels.pop();
+    popLabel();
     string arg1 = labels.top();
-    labels.pop();
+    popLabel();
 
     // check the jump type and insert the appropriate entry
     string jmp;
@@ -208,16 +213,25 @@ void Quadraples::processCases(char *switchValue)
     casesIDs.clear();
 }
 
-char *Quadraples::getCurrentLabel()
+char *Quadraples::generateTempVar()
 {
-    std::string label = "T" + std::to_string(this->entryCount);
+    std::string label = generateLabel("T", entryCount);
     char *labelPtr = new char[label.length() + 1]; // +1 for null terminator
     strcpy(labelPtr, label.c_str());
     return labelPtr;
 }
 
+void Quadraples::pushLabel(char *label)
+{
+    string labelStr(label);
+    printf("-->Pushed label: %s\n", labelStr.c_str());
+    labels.push(labelStr);
+}
+
 void Quadraples::popLabel()
 {
+    string label = labels.top();
+    printf("<--Popped label: %s\n", label.c_str());
     labels.pop();
 }
 

@@ -1,5 +1,0 @@
-line [6]: Error: Parameters not matching
-line [6]: Error: Type mismatch between data type and expression
-
-line [7]: Error: Type mismatch between data type and expression
-

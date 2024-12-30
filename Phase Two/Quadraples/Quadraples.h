@@ -63,7 +63,7 @@ public:
     void insertVariable(string name);
     void pushLabel(char *label);
     void popLabel();
-    void addUnary(char *operation, char *result);
+    void addUnary(char *operation, char *result, bool hasLabel = false);
     void addBinary(char *operation, char *result);
     void addBranch(char *jumpType);
     void addLine();
@@ -78,7 +78,7 @@ public:
     void incrementLineCount();
     void addJumpOp();
     void clearVariablesStack();
-    char *getCurrentLabel();
+    char *generateTempVar();
     char *getCurrentLine();
     char *getCurrentLoop();
     int getLineCountinStack();

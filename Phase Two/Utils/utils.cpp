@@ -104,3 +104,18 @@ char *concatenateTwoStrings(char *str1, char *str2, char delimiter)
 
     return _strdup(result.c_str()); // Return a dynamically allocated C-string
 }
+
+// Concatenate a list of strings with a delimiter in reverse order
+char *concatenateList(vector<char *> list, char delimiter)
+{
+    string result = "";
+    for (int i = list.size() - 1; i >= 0; i--)
+    {
+        result += string(list[i]);
+        if (i != 0)
+        {
+            result += delimiter;
+        }
+    }
+    return _strdup(result.c_str());
+}

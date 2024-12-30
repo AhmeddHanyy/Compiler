@@ -1,7 +1,4 @@
-int myFunc(int y, float z) {
-    int x = 0;
-}
-
-int x = myFunc(1, 2.0);
-int y = myFunc(1, "2.0");
-string z = myFunc(1, 2.0);
+string x = "ayhaga";
+int x = 5;
+int y;
+y = x;
