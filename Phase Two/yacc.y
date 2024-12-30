@@ -315,7 +315,9 @@ startScope : '{' {
 
 endScope : '}' {
   symbolHier.updateCurrentScope(symbolHier.currentScopeTable->parent);                   
-} 
+} | error {
+  yyerror("Missing closing brace '}' at the end of scope.");
+}
 ;
 /*####################################################################################*/
 // IF-Condition
@@ -539,7 +541,7 @@ forLoop1 : dataType ID ASSIGN expression {}
 
 /*##################################################################################################*/
 // Switch case
-switchCase : SWITCH '(' ID ')' '{' multiCase '}' {}
+switchCase : SWITCH '(' ID ')' startScope multiCase endScope {}
 ;
 
 
