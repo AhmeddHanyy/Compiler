@@ -1,12 +1,7 @@
- MOV h  8
- MOV y  9
- CMP h 5 
- JNE   Line0
- MOV z  10
- Line0:   
- MOV z  11
- CMP 11 12 
- JNE   Line1
- MOV f  13
- Line1:   
- MOV x  -5
+ myFunc:   
+ ADD x y T1
+ RET T1  
+ myFunc:   
+ RET w  
+ CALL myFunc 8 9 "10" T5
+ MOV x  T5

@@ -206,7 +206,11 @@ line :
       | whileLoop  {}
       | doWhile {}
       | function {}
-      | functionCall {}
+      | functionCall {
+        $$ = $1;
+        char* label = quad.generateTempVar();
+        quad.addBinary("CALL", label);
+      }
       | returnStatement {}
       | forLoop {}
       | BREAK semi_colon_error{
@@ -222,6 +226,7 @@ line :
 semi_colon_error: ';' {}
                 | epsilon{
                     yyerror("Missing ';'");
+                    $$ = $1;
                    }
 ;
 
@@ -241,6 +246,7 @@ ID : IDENTIFIER {
 expression : logExpression{$$ = $1;}
            | functionCall {
                             $$ = $1;
+                            printf("AAAA Function Call: %s\n", $1);
                             char* label = quad.generateTempVar();
                             quad.addBinary("CALL", label);
                           }
@@ -321,6 +327,8 @@ arithExpression :
               $$ = $1; // propagate the result of the term1
              }
           | arithExpression PLUS term1 {
+                  printf("|| 1: %s\n", $1);
+                  printf("|| 3: %s\n", $3);
                   char* right_expr_value, *left_expr_value;
                   vector <char*> expr_info = splitString($3, ',');
                   right_expr_value = expr_info[0];
@@ -504,6 +512,8 @@ factor :
                   semantic_errors("Variable is not initiliazed\n");
                 }
                 entry->setIsAccessed(true);
+                printf("|| entry->getValue(): %s\n", entry->getValue());
+                printf("|| entry->getVariableName(): %s\n", entry->getVariableName());
                 $$ = concatenateTwoStrings(entry->getValue(), entry->getVariableName(), ',');
               }
             }
@@ -622,9 +632,6 @@ DO_mark : DO {
 function : functionSigStart functionSig scope {
   printf("Function ends\n");
   symbolHier.updateCurrentScope(symbolHier.currentScopeTable->parent);
-  // Use quads to add the function end label
-  quad.insertEntry("RET", "", "", "");
-  quad.isFunctionFlag = 0;
 }
 ;
 
@@ -634,7 +641,8 @@ if(symbolHier.currentScopeTable->lookUp($3,$2))
 {
   semantic_errors("Variable is already in param list\n");
 }else{
-  symbolHier.addEntryToCurrentScope($3,$2,"-0",true,false);
+  quad.popLabel();
+  symbolHier.addEntryToCurrentScope($3,$2,$2,true,false);
 }
 }
             |  '(' dataType ID ASSIGN expression defaultParams ')' {
@@ -662,6 +670,7 @@ functionSigStart: dataType ID {
   // Use quads to add the function label
   quad.isFunctionFlag = 1;
   quad.insertEntry(concatenateTwoStrings($2,":"),"","","");
+  quad.popLabel();
 }
 | VOID ID {
   SymbolTable* functionTable = new SymbolTable($2, symbolHier.currentScopeTable,(char*)"void");
@@ -676,12 +685,13 @@ functionSigStart: dataType ID {
 }
 ;
 
-functionParams : ',' dataType ID functionParams{
+functionParams : ',' dataType ID functionParams {
 if(symbolHier.currentScopeTable->lookUp($3,$2))
 {
   semantic_errors("Variable is already in param list\n");
 }else{
-  symbolHier.addEntryToCurrentScope($3,$2,$3,true,false);
+  quad.popLabel();
+  symbolHier.addEntryToCurrentScope($3,$2,$2,true,false);
 }
 
                   }
@@ -697,18 +707,27 @@ if(symbolHier.currentScopeTable->lookUp($3,$2))
                       //Assuming compatible then:
                       // symbolHier.addEntryToCurrentScope($2,$1,expression,true,false);
                     }
-              | epsilon {}
+              | epsilon { $$ = $1; }
 ;
 //Second function call
 
 functionCall : ID '(' expression functionCallParams  ')'{
-                      char* params = concatenateTwoStrings($4,$3,',');
+                      char* expr_value, *expr_label="";
+                      vector <char*> expr_info = splitString($3, ',');
+                      expr_value = expr_info[0];
+                      if (expr_info.size() > 1) expr_label = expr_info[1];
+                      printf("Function Call: expr_info: %s || %s\n", expr_value, expr_label);
+                      char* params = concatenateTwoStrings($4,expr_label,',');
+                      printf("Function Call: %s\n", params);
+                      printf("Function Call: %s\n", $4);
                       char* reason = nullptr;
                       SymbolTable* foundTable = symbolHier.checkFunctionExists($1, params, reason);
                       if (!foundTable){
                         yyerror(reason);
+                        printf("Function %s not found\n", $1);
                       }
                       else {
+                        quad.popLabel();
                         $$ = concatenateTwoStrings(foundTable->returnType, params, ',');
                         printf("Function %s called\n", $1);
                         vector<char*> paramsList = splitString(params, ',');
@@ -730,22 +749,38 @@ functionCall : ID '(' expression functionCallParams  ')'{
 ;
 
 functionCallParams :  ',' expression functionCallParams {
-                          $$ = concatenateTwoStrings($3, $2, ',');
+                          quad.popLabel();
+                          char* expr_value, *expr_label="";   
+                          vector <char*> expr_info = splitString($2, ',');
+                          expr_value = expr_info[0];
+                          if (expr_info.size() > 1) expr_label = expr_info[1];
+                          $$ = concatenateTwoStrings($3, expr_label, ',');
                         }
-                    | epsilon {}
+                    | epsilon {$$ = $1;}
 ;
 
 epsilon : {$$ = "";}
 ;
 returnStatement : RETURN_mark expression ';' {
+                    printf("||Return statement: %s\n", $2);
+                    char* expr_value, *expr_name="";
+                    vector <char*> expr_info = splitString($2, ',');
+                    expr_value = expr_info[0];
+                    if (expr_info.size() > 1) expr_name = expr_info[1];
                     SymbolTable* funcScope = symbolHier.currentScopeTable->parent;
                     if (!funcScope || funcScope->returnType == nullptr) {
                       yyerror("Return statement not allowed in this scope\n");
-                    } else if (!funcScope->validateReturnType($2)) {
+                    } else if (!funcScope->validateReturnType(expr_value)) {
                       yyerror("Return type does not match the function return type\n");
                     } else {
                       printf("Return statement ends\n");
                       $$ = $2;
+                      if (strcmp(expr_name, "") != 0) {
+                        quad.addUnary("RET", "");
+                      } else {
+                        quad.addUnary("RET", "");
+                      }
+                      quad.isFunctionFlag = 0;
                     }
                   }
                 | RETURN_mark';' {
@@ -787,7 +822,7 @@ FOR_mark : FOR {
 ;
 forLoop1 : dataType ID ASSIGN expression {}
          | ID ASSIGN expression {}
-         | epsilon {}
+         | epsilon { $$ = $1; }
 ;
 
 

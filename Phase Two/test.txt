@@ -1,16 +1,8 @@
-int h = 8;
-if ((h + tru)/2 < 6) {
-    int y = 9;
-    if (h == 5) {
-        int z = 10;
-    }
-    else {
-        int z = 11;
-    }
+int myFunc(int x, int y, string w) {
+    return x+y;
 }
-else if (11 == 12) {
-    int f = 13;
+string myFunc(int x, int y, string w) {
+    return w;
 }
-else {
-    int x = -5;
-}
+
+int x = myFunc(8, 9, "10");

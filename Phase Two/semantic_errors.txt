@@ -1,13 +1,1 @@
-line [2]: Semantic Error: Variable is not declared
-
-line [2]: Semantic Error: Type mismatch between left and right expressions
-
-line [2]: Semantic Error: Type mismatch between left and right expressions
-
-line [2]: Semantic Error: Type mismatch between left and right expressions
-
 Semantic Warning: Variable x is declared but not used
-Semantic Warning: Variable f is declared but not used
-Semantic Warning: Variable z is declared but not used
-Semantic Warning: Variable y is declared but not used
-Semantic Warning: Variable z is declared but not used
