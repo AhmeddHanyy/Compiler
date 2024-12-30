@@ -30,9 +30,8 @@ class Ui_Dialog(object):
                 background-color: #333333;
                 color: #00FF00;  /* Green text to resemble code */
                 line-height: 1.5;
-                word-wrap: break-word;
                 font-weight: bold;
-                transition: background-color 0.3s;
+              
             }
             QTextEdit:focus {
                 background-color: #444444;  /* Slightly darker background when focused */
@@ -48,7 +47,7 @@ class Ui_Dialog(object):
                 color: white;
                 border-radius: 8px;
                 border: none;
-                transition: background-color 0.3s;
+                
             }
             QPushButton:hover {
                 background-color: #45a049;
@@ -185,7 +184,7 @@ class MyDialog(QDialog, Ui_Dialog):
                 result_text = file.read()
                 self.result_text.setText(result_text)
         except FileNotFoundError:
-            print("Error: compiler.exe or output.txt not found!")
+            print("Error: a.exe or output.txt not found!")
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
