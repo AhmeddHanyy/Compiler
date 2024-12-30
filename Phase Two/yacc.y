@@ -112,15 +112,11 @@ line :
                   else
                   {
                     symbolHier.addEntryToCurrentScope($2, $1, expr_value, true, false);
-                    printf("AAAAAAAAAAAAAAAAAAAAAA\n");
                     if (strcmp(expr_name, "") != 0) {
-                      printf("BBBBBBBBBBBBBBBBBBBBBBBBB");
                       quad.addUnary("MOV", expr_name, true);
                     } else {
-                      printf("CCCCCCCCCCCCCCCCCCCCCCCCCCCCC");
                       quad.addUnary("MOV", expr_value);
                     }
-                    printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
                     quad.resetEntryCount();
                   }
                 }
@@ -243,7 +239,10 @@ ID : IDENTIFIER {
    ;
 
 /*#########################################################################*/
-expression : logExpression{$$ = $1;}
+expression : logExpression{
+                            $$ = $1;
+                            printf("logExpression: %s\n", $1);
+                          }
            | functionCall {
                             $$ = $1;
                             printf("AAAA Function Call: %s\n", $1);
@@ -259,31 +258,76 @@ expression : logExpression{$$ = $1;}
 
 // Logical Expressions
 logExpression : logExpression OR andLogExpression {
-  // Add quad for logical OR operation
-  char* tempVar = quad.generateTempVar();
-  quad.addBinary("OR", tempVar);
-  $$ = tempVar; // result of OR is stored in a temporary variable
-}
+                  char* right_expr_value, *left_expr_value;
+                  vector <char*> expr_info = splitString($3, ',');
+                  right_expr_value = expr_info[0];
+                  expr_info = splitString($1, ',');
+                  left_expr_value = expr_info[0];
+                  // Check if the types are compatible
+                  SemanticChecker semanticChecker;
+                  if (!semanticChecker.matchTypes(left_expr_value, right_expr_value)) {
+                    semantic_errors("Type mismatch between left and right expressions\n");
+                    $$ = "";
+                  }
+                  else if (strcmp(left_expr_value, "bool") != 0) {
+                    semantic_errors("Invalid operation for non-boolean types\n");
+                    $$ = "";
+                  }
+                  else {
+                    char* tempVar = quad.generateTempVar();
+                    quad.addBinary("OR", tempVar);
+                    $$ = concatenateTwoStrings(right_expr_value, tempVar, ','); // result of addition is stored in a temporary variable
+                  }
+                }
               | andLogExpression {
   $$ = $1; // propagate the result of the andLogExpression
 }
 
 andLogExpression : andLogExpression AND notLogExpression {
-  // Add quad for logical AND operation
-  char* tempVar = quad.generateTempVar();
-  quad.addBinary("AND", tempVar);
-  $$ = tempVar; // result of AND is stored in a temporary variable
-}
+                  char* right_expr_value, *left_expr_value;
+                  vector <char*> expr_info = splitString($3, ',');
+                  right_expr_value = expr_info[0];
+                  expr_info = splitString($1, ',');
+                  left_expr_value = expr_info[0];
+                  // Check if the types are compatible
+                  SemanticChecker semanticChecker;
+                  if (!semanticChecker.matchTypes(left_expr_value, right_expr_value)) {
+                    semantic_errors("Type mismatch between left and right expressions\n");
+                    $$ = "";
+                  }
+                  else if (strcmp(left_expr_value, "bool") != 0) {
+                    semantic_errors("Invalid operation for non-boolean\n");
+                    $$ = "";
+                  }
+                  else {
+                    char* tempVar = quad.generateTempVar();
+                    quad.addBinary("AND", tempVar);
+                    $$ = concatenateTwoStrings(right_expr_value, tempVar, ','); // result of addition is stored in a temporary variable
+                  }
+                }
                 | notLogExpression {
   $$ = $1; // propagate the result of the notLogExpression
 }
 
 notLogExpression : NOT notLogExpression {
-  // Add quad for logical NOT operation
-  char* tempVar = quad.generateTempVar();
-  quad.addUnary("NOT", tempVar);
-  $$ = tempVar; // result of NOT is stored in a temporary variable
-}
+          char* expr_value, *expr_name;
+          vector <char*> expr_info = splitString($2, ',');
+          expr_value = expr_info[0];
+          expr_name = expr_info[1];
+
+          // check if it is a float / int
+          SemanticChecker semanticChecker;
+          char* expr_type = semanticChecker.determineType(expr_value);
+          if (strcmp(expr_type, "bool") != 0) {
+            semantic_errors("Invalid operation for non-boolean types\n");
+            $$ = "";
+          } else {
+            char* tempVar = quad.generateTempVar();
+            quad.addUnary("NOT", tempVar);
+            quad.pushLabel(tempVar);
+            $$ = concatenateTwoStrings(expr_value, tempVar, ',');
+          }
+        }
                | compExpression {
   $$ = $1; // propagate the result of the comparison expression
 }
@@ -301,7 +345,7 @@ compExpression : compExpression Comparator arithExpression {
     semantic_errors("Type mismatch between left and right expressions\n");
     $$ = "";
   }
-  else if (strcmp(left_expr_value, "bool") == 0 || strcmp(left_expr_value, "char") == 0 || strcmp(left_expr_value, "string") == 0) {
+  else if (strcmp(left_expr_value, "char") == 0 || strcmp(left_expr_value, "string") == 0) {
     semantic_errors("Invalid operation for boolean or character types\n");
     $$ = "";
   }
@@ -327,8 +371,6 @@ arithExpression :
               $$ = $1; // propagate the result of the term1
              }
           | arithExpression PLUS term1 {
-                  printf("|| 1: %s\n", $1);
-                  printf("|| 3: %s\n", $3);
                   char* right_expr_value, *left_expr_value;
                   vector <char*> expr_info = splitString($3, ',');
                   right_expr_value = expr_info[0];

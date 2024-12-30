@@ -32,16 +32,6 @@ void Quadraples::addUnary(char *operation, char *result, bool hasLabel)
     string op(operation);
     printf("Adding unary operation: %s %s\n", operation, result);
 
-    // print labels
-    printf("--Labels stack:--\n");
-    stack<string> temp = labels;
-    while (!temp.empty())
-    {
-        printf("%s ", temp.top().c_str());
-        temp.pop();
-    }
-    printf("\n");
-
     // pop the last label from the stack
     if (hasLabel)
     {
@@ -226,15 +216,33 @@ char *Quadraples::generateTempVar()
 void Quadraples::pushLabel(char *label)
 {
     string labelStr(label);
-    printf("-->Pushed label: %s\n", labelStr.c_str());
+    printf("-->Pushing label: %s\n", labelStr.c_str());
     labels.push(labelStr);
+
+    printf("--Labels stack:--\n");
+    stack<string> temp = labels;
+    while (!temp.empty())
+    {
+        printf("%s ", temp.top().c_str());
+        temp.pop();
+    }
+    printf("\n---------\n");
 }
 
 void Quadraples::popLabel()
 {
     string label = labels.top();
+    printf("<--Popping label: %s\n", label.c_str());
     labels.pop();
-    printf("<--Popped label: %s\n", label.c_str());
+
+    printf("--Labels stack:--\n");
+    stack<string> temp = labels;
+    while (!temp.empty())
+    {
+        printf("%s ", temp.top().c_str());
+        temp.pop();
+    }
+    printf("\n---------\n");
 }
 
 void Quadraples::incEntryCount()

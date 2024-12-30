@@ -1,7 +1,11 @@
- myFunc:   
- ADD x y T1
- RET T1  
- myFunc:   
- RET w  
- CALL myFunc 8 9 "10" T5
- MOV x  T5
+ MOV x  true
+ NOT x  T0
+ MOV y  T0
+ AND x y T0
+ OR x y T1
+ OR T0 T1 T2
+ CMP T2 true 
+ JNE   Line0
+ MOV w  true
+ Line0:   
+ MOV w  false

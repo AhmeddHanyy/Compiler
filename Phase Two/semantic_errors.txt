@@ -1,1 +1,1 @@
-Semantic Warning: Variable x is declared but not used
+Semantic Warning: Variable w is declared but not used

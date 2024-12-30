@@ -562,15 +562,15 @@ static const yytype_uint16 yyrline[] =
        0,    55,    55,    58,    65,    69,    74,    77,    87,   129,
      164,   204,   205,   206,   207,   208,   209,   214,   215,   216,
      219,   223,   226,   227,   233,   234,   235,   236,   237,   239,
-     246,   247,   261,   267,   271,   277,   281,   287,   292,   313,
-     317,   318,   319,   320,   321,   322,   326,   329,   353,   376,
-     379,   401,   424,   427,   449,   469,   474,   480,   485,   490,
-     495,   500,   520,   524,   525,   528,   540,   542,   554,   555,
-     558,   559,   560,   563,   574,   580,   592,   597,   602,   609,
-     613,   619,   624,   632,   639,   648,   658,   663,   675,   688,
-     698,   700,   710,   714,   737,   751,   759,   762,   764,   786,
-     797,   808,   813,   823,   824,   825,   831,   836,   837,   840,
-     841,   842
+     246,   250,   264,   286,   290,   312,   316,   335,   340,   361,
+     365,   366,   367,   368,   369,   370,   374,   377,   399,   422,
+     425,   447,   470,   473,   495,   515,   520,   526,   531,   536,
+     541,   546,   566,   570,   571,   574,   586,   588,   600,   601,
+     604,   605,   606,   609,   620,   626,   638,   643,   648,   655,
+     659,   665,   670,   678,   685,   694,   704,   709,   721,   734,
+     744,   746,   756,   760,   783,   797,   805,   808,   810,   832,
+     843,   854,   859,   869,   870,   871,   877,   882,   883,   886,
+     887,   888
 };
 #endif
 
@@ -1976,13 +1976,16 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 246 "yacc.y"
-    {(yyval.stringValue) = (yyvsp[(1) - (1)].stringValue);}
+    {
+                            (yyval.stringValue) = (yyvsp[(1) - (1)].stringValue);
+                            printf("logExpression: %s\n", (yyvsp[(1) - (1)].stringValue));
+                          }
     break;
 
   case 31:
 
 /* Line 1455 of yacc.c  */
-#line 247 "yacc.y"
+#line 250 "yacc.y"
     {
                             (yyval.stringValue) = (yyvsp[(1) - (1)].stringValue);
                             printf("AAAA Function Call: %s\n", (yyvsp[(1) - (1)].stringValue));
@@ -1994,19 +1997,35 @@ yyreduce:
   case 32:
 
 /* Line 1455 of yacc.c  */
-#line 261 "yacc.y"
+#line 264 "yacc.y"
     {
-  // Add quad for logical OR operation
-  char* tempVar = quad.generateTempVar();
-  quad.addBinary("OR", tempVar);
-  (yyval.stringValue) = tempVar; // result of OR is stored in a temporary variable
-}
+                  char* right_expr_value, *left_expr_value;
+                  vector <char*> expr_info = splitString((yyvsp[(3) - (3)].stringValue), ',');
+                  right_expr_value = expr_info[0];
+                  expr_info = splitString((yyvsp[(1) - (3)].stringValue), ',');
+                  left_expr_value = expr_info[0];
+                  // Check if the types are compatible
+                  SemanticChecker semanticChecker;
+                  if (!semanticChecker.matchTypes(left_expr_value, right_expr_value)) {
+                    semantic_errors("Type mismatch between left and right expressions\n");
+                    (yyval.stringValue) = "";
+                  }
+                  else if (strcmp(left_expr_value, "bool") != 0) {
+                    semantic_errors("Invalid operation for non-boolean types\n");
+                    (yyval.stringValue) = "";
+                  }
+                  else {
+                    char* tempVar = quad.generateTempVar();
+                    quad.addBinary("OR", tempVar);
+                    (yyval.stringValue) = concatenateTwoStrings(right_expr_value, tempVar, ','); // result of addition is stored in a temporary variable
+                  }
+                }
     break;
 
   case 33:
 
 /* Line 1455 of yacc.c  */
-#line 267 "yacc.y"
+#line 286 "yacc.y"
     {
   (yyval.stringValue) = (yyvsp[(1) - (1)].stringValue); // propagate the result of the andLogExpression
 }
@@ -2015,19 +2034,35 @@ yyreduce:
   case 34:
 
 /* Line 1455 of yacc.c  */
-#line 271 "yacc.y"
+#line 290 "yacc.y"
     {
-  // Add quad for logical AND operation
-  char* tempVar = quad.generateTempVar();
-  quad.addBinary("AND", tempVar);
-  (yyval.stringValue) = tempVar; // result of AND is stored in a temporary variable
-}
+                  char* right_expr_value, *left_expr_value;
+                  vector <char*> expr_info = splitString((yyvsp[(3) - (3)].stringValue), ',');
+                  right_expr_value = expr_info[0];
+                  expr_info = splitString((yyvsp[(1) - (3)].stringValue), ',');
+                  left_expr_value = expr_info[0];
+                  // Check if the types are compatible
+                  SemanticChecker semanticChecker;
+                  if (!semanticChecker.matchTypes(left_expr_value, right_expr_value)) {
+                    semantic_errors("Type mismatch between left and right expressions\n");
+                    (yyval.stringValue) = "";
+                  }
+                  else if (strcmp(left_expr_value, "bool") != 0) {
+                    semantic_errors("Invalid operation for non-boolean\n");
+                    (yyval.stringValue) = "";
+                  }
+                  else {
+                    char* tempVar = quad.generateTempVar();
+                    quad.addBinary("AND", tempVar);
+                    (yyval.stringValue) = concatenateTwoStrings(right_expr_value, tempVar, ','); // result of addition is stored in a temporary variable
+                  }
+                }
     break;
 
   case 35:
 
 /* Line 1455 of yacc.c  */
-#line 277 "yacc.y"
+#line 312 "yacc.y"
     {
   (yyval.stringValue) = (yyvsp[(1) - (1)].stringValue); // propagate the result of the notLogExpression
 }
@@ -2036,19 +2071,32 @@ yyreduce:
   case 36:
 
 /* Line 1455 of yacc.c  */
-#line 281 "yacc.y"
+#line 316 "yacc.y"
     {
-  // Add quad for logical NOT operation
-  char* tempVar = quad.generateTempVar();
-  quad.addUnary("NOT", tempVar);
-  (yyval.stringValue) = tempVar; // result of NOT is stored in a temporary variable
-}
+          char* expr_value, *expr_name;
+          vector <char*> expr_info = splitString((yyvsp[(2) - (2)].stringValue), ',');
+          expr_value = expr_info[0];
+          expr_name = expr_info[1];
+
+          // check if it is a float / int
+          SemanticChecker semanticChecker;
+          char* expr_type = semanticChecker.determineType(expr_value);
+          if (strcmp(expr_type, "bool") != 0) {
+            semantic_errors("Invalid operation for non-boolean types\n");
+            (yyval.stringValue) = "";
+          } else {
+            char* tempVar = quad.generateTempVar();
+            quad.addUnary("NOT", tempVar);
+            quad.pushLabel(tempVar);
+            (yyval.stringValue) = concatenateTwoStrings(expr_value, tempVar, ',');
+          }
+        }
     break;
 
   case 37:
 
 /* Line 1455 of yacc.c  */
-#line 287 "yacc.y"
+#line 335 "yacc.y"
     {
   (yyval.stringValue) = (yyvsp[(1) - (1)].stringValue); // propagate the result of the comparison expression
 }
@@ -2057,7 +2105,7 @@ yyreduce:
   case 38:
 
 /* Line 1455 of yacc.c  */
-#line 292 "yacc.y"
+#line 340 "yacc.y"
     {
   char* right_expr_value, *left_expr_value;
   vector <char*> expr_info = splitString((yyvsp[(3) - (3)].stringValue), ',');
@@ -2070,7 +2118,7 @@ yyreduce:
     semantic_errors("Type mismatch between left and right expressions\n");
     (yyval.stringValue) = "";
   }
-  else if (strcmp(left_expr_value, "bool") == 0 || strcmp(left_expr_value, "char") == 0 || strcmp(left_expr_value, "string") == 0) {
+  else if (strcmp(left_expr_value, "char") == 0 || strcmp(left_expr_value, "string") == 0) {
     semantic_errors("Invalid operation for boolean or character types\n");
     (yyval.stringValue) = "";
   }
@@ -2084,7 +2132,7 @@ yyreduce:
   case 39:
 
 /* Line 1455 of yacc.c  */
-#line 313 "yacc.y"
+#line 361 "yacc.y"
     {
   (yyval.stringValue) = (yyvsp[(1) - (1)].stringValue); // propagate the result of the arithmetic expression
 }
@@ -2093,49 +2141,49 @@ yyreduce:
   case 40:
 
 /* Line 1455 of yacc.c  */
-#line 317 "yacc.y"
+#line 365 "yacc.y"
     {(yyval.stringValue) = (yyvsp[(1) - (1)].stringValue);}
     break;
 
   case 41:
 
 /* Line 1455 of yacc.c  */
-#line 318 "yacc.y"
+#line 366 "yacc.y"
     {(yyval.stringValue) = (yyvsp[(1) - (1)].stringValue);}
     break;
 
   case 42:
 
 /* Line 1455 of yacc.c  */
-#line 319 "yacc.y"
+#line 367 "yacc.y"
     {(yyval.stringValue) = (yyvsp[(1) - (1)].stringValue);}
     break;
 
   case 43:
 
 /* Line 1455 of yacc.c  */
-#line 320 "yacc.y"
+#line 368 "yacc.y"
     {(yyval.stringValue) = (yyvsp[(1) - (1)].stringValue);}
     break;
 
   case 44:
 
 /* Line 1455 of yacc.c  */
-#line 321 "yacc.y"
+#line 369 "yacc.y"
     {(yyval.stringValue) = (yyvsp[(1) - (1)].stringValue);}
     break;
 
   case 45:
 
 /* Line 1455 of yacc.c  */
-#line 322 "yacc.y"
+#line 370 "yacc.y"
     {(yyval.stringValue) = (yyvsp[(1) - (1)].stringValue);}
     break;
 
   case 46:
 
 /* Line 1455 of yacc.c  */
-#line 326 "yacc.y"
+#line 374 "yacc.y"
     {
               (yyval.stringValue) = (yyvsp[(1) - (1)].stringValue); // propagate the result of the term1
              }
@@ -2144,10 +2192,8 @@ yyreduce:
   case 47:
 
 /* Line 1455 of yacc.c  */
-#line 329 "yacc.y"
+#line 377 "yacc.y"
     {
-                  printf("|| 1: %s\n", (yyvsp[(1) - (3)].stringValue));
-                  printf("|| 3: %s\n", (yyvsp[(3) - (3)].stringValue));
                   char* right_expr_value, *left_expr_value;
                   vector <char*> expr_info = splitString((yyvsp[(3) - (3)].stringValue), ',');
                   right_expr_value = expr_info[0];
@@ -2174,7 +2220,7 @@ yyreduce:
   case 48:
 
 /* Line 1455 of yacc.c  */
-#line 353 "yacc.y"
+#line 399 "yacc.y"
     {
                   char* right_expr_value, *left_expr_value;
                   vector <char*> expr_info = splitString((yyvsp[(3) - (3)].stringValue), ',');
@@ -2202,7 +2248,7 @@ yyreduce:
   case 49:
 
 /* Line 1455 of yacc.c  */
-#line 376 "yacc.y"
+#line 422 "yacc.y"
     {
           (yyval.stringValue) = (yyvsp[(1) - (1)].stringValue); // propagate the result of term2
         }
@@ -2211,7 +2257,7 @@ yyreduce:
   case 50:
 
 /* Line 1455 of yacc.c  */
-#line 379 "yacc.y"
+#line 425 "yacc.y"
     {
                   char* right_expr_value, *left_expr_value;
                   vector <char*> expr_info = splitString((yyvsp[(3) - (3)].stringValue), ',');
@@ -2239,7 +2285,7 @@ yyreduce:
   case 51:
 
 /* Line 1455 of yacc.c  */
-#line 401 "yacc.y"
+#line 447 "yacc.y"
     {
                   char* right_expr_value, *left_expr_value;
                   vector <char*> expr_info = splitString((yyvsp[(3) - (3)].stringValue), ',');
@@ -2267,7 +2313,7 @@ yyreduce:
   case 52:
 
 /* Line 1455 of yacc.c  */
-#line 424 "yacc.y"
+#line 470 "yacc.y"
     {
                   (yyval.stringValue) = (yyvsp[(1) - (1)].stringValue); // propagate the result of term3
                 }
@@ -2276,7 +2322,7 @@ yyreduce:
   case 53:
 
 /* Line 1455 of yacc.c  */
-#line 427 "yacc.y"
+#line 473 "yacc.y"
     {
                   char* right_expr_value, *left_expr_value;
                   vector <char*> expr_info = splitString((yyvsp[(3) - (3)].stringValue), ',');
@@ -2304,7 +2350,7 @@ yyreduce:
   case 54:
 
 /* Line 1455 of yacc.c  */
-#line 449 "yacc.y"
+#line 495 "yacc.y"
     {
           char* expr_value, *expr_name;
           vector <char*> expr_info = splitString((yyvsp[(2) - (2)].stringValue), ',');
@@ -2330,7 +2376,7 @@ yyreduce:
   case 55:
 
 /* Line 1455 of yacc.c  */
-#line 469 "yacc.y"
+#line 515 "yacc.y"
     { 
           (yyval.stringValue) = (yyvsp[(1) - (1)].stringValue); // propagate the result of the factor
         }
@@ -2339,7 +2385,7 @@ yyreduce:
   case 56:
 
 /* Line 1455 of yacc.c  */
-#line 474 "yacc.y"
+#line 520 "yacc.y"
     {
             // convert integer value to string
             char* expr_info = concatenateTwoStrings("int", (yyvsp[(1) - (1)].stringValue), ','); 
@@ -2351,7 +2397,7 @@ yyreduce:
   case 57:
 
 /* Line 1455 of yacc.c  */
-#line 480 "yacc.y"
+#line 526 "yacc.y"
     {
             char* expr_info = concatenateTwoStrings("float", (yyvsp[(1) - (1)].stringValue), ','); 
             (yyval.stringValue) = expr_info;
@@ -2362,7 +2408,7 @@ yyreduce:
   case 58:
 
 /* Line 1455 of yacc.c  */
-#line 485 "yacc.y"
+#line 531 "yacc.y"
     {
             char* expr_info = concatenateTwoStrings("char", (yyvsp[(1) - (1)].stringValue), ','); 
             (yyval.stringValue) = expr_info;
@@ -2373,7 +2419,7 @@ yyreduce:
   case 59:
 
 /* Line 1455 of yacc.c  */
-#line 490 "yacc.y"
+#line 536 "yacc.y"
     {
             char* expr_info = concatenateTwoStrings("string", (yyvsp[(1) - (1)].stringValue), ','); 
             (yyval.stringValue) = expr_info;
@@ -2384,7 +2430,7 @@ yyreduce:
   case 60:
 
 /* Line 1455 of yacc.c  */
-#line 495 "yacc.y"
+#line 541 "yacc.y"
     {
             char* expr_info = concatenateTwoStrings("bool", (yyvsp[(1) - (1)].stringValue), ','); 
             (yyval.stringValue) = expr_info;
@@ -2395,7 +2441,7 @@ yyreduce:
   case 61:
 
 /* Line 1455 of yacc.c  */
-#line 500 "yacc.y"
+#line 546 "yacc.y"
     {
               SymbolTable* entryScope =  symbolHier.getEntryScope((yyvsp[(1) - (1)].stringValue));
 
@@ -2421,28 +2467,28 @@ yyreduce:
   case 62:
 
 /* Line 1455 of yacc.c  */
-#line 520 "yacc.y"
+#line 566 "yacc.y"
     { (yyval.stringValue) = (yyvsp[(2) - (3)].stringValue); }
     break;
 
   case 63:
 
 /* Line 1455 of yacc.c  */
-#line 524 "yacc.y"
+#line 570 "yacc.y"
     {}
     break;
 
   case 64:
 
 /* Line 1455 of yacc.c  */
-#line 525 "yacc.y"
+#line 571 "yacc.y"
     {}
     break;
 
   case 65:
 
 /* Line 1455 of yacc.c  */
-#line 528 "yacc.y"
+#line 574 "yacc.y"
     {
   //create new table
   SymbolTable* localTable = new SymbolTable(strdup(("Local" + to_string(num_scopes)).c_str()), symbolHier.currentScopeTable);
@@ -2458,7 +2504,7 @@ yyreduce:
   case 66:
 
 /* Line 1455 of yacc.c  */
-#line 540 "yacc.y"
+#line 586 "yacc.y"
     {
   symbolHier.updateCurrentScope(symbolHier.currentScopeTable->parent);                   
 }
@@ -2467,7 +2513,7 @@ yyreduce:
   case 67:
 
 /* Line 1455 of yacc.c  */
-#line 542 "yacc.y"
+#line 588 "yacc.y"
     {
   yyerror("Missing closing brace '}' at the end of scope.");
 }
@@ -2476,42 +2522,42 @@ yyreduce:
   case 68:
 
 /* Line 1455 of yacc.c  */
-#line 554 "yacc.y"
+#line 600 "yacc.y"
     {}
     break;
 
   case 69:
 
 /* Line 1455 of yacc.c  */
-#line 555 "yacc.y"
+#line 601 "yacc.y"
     {}
     break;
 
   case 70:
 
 /* Line 1455 of yacc.c  */
-#line 558 "yacc.y"
+#line 604 "yacc.y"
     {}
     break;
 
   case 71:
 
 /* Line 1455 of yacc.c  */
-#line 559 "yacc.y"
+#line 605 "yacc.y"
     {}
     break;
 
   case 72:
 
 /* Line 1455 of yacc.c  */
-#line 560 "yacc.y"
+#line 606 "yacc.y"
     {}
     break;
 
   case 73:
 
 /* Line 1455 of yacc.c  */
-#line 563 "yacc.y"
+#line 609 "yacc.y"
     {
     SemanticChecker semanticChecker;
     if (!semanticChecker.isBool((yyvsp[(3) - (5)].stringValue))) {
@@ -2526,7 +2572,7 @@ yyreduce:
   case 74:
 
 /* Line 1455 of yacc.c  */
-#line 574 "yacc.y"
+#line 620 "yacc.y"
     {
     printf("ELSE statement ends\n");
     quad.addLine();
@@ -2536,7 +2582,7 @@ yyreduce:
   case 75:
 
 /* Line 1455 of yacc.c  */
-#line 580 "yacc.y"
+#line 626 "yacc.y"
     {
     SemanticChecker semanticChecker;
     if (!semanticChecker.isBool((yyvsp[(3) - (5)].stringValue))) {
@@ -2552,7 +2598,7 @@ yyreduce:
   case 76:
 
 /* Line 1455 of yacc.c  */
-#line 592 "yacc.y"
+#line 638 "yacc.y"
     {
     printf("IF statement begins\n");
 }
@@ -2561,7 +2607,7 @@ yyreduce:
   case 77:
 
 /* Line 1455 of yacc.c  */
-#line 597 "yacc.y"
+#line 643 "yacc.y"
     {
     printf("ELSE IF statement begins\n");
 }
@@ -2570,7 +2616,7 @@ yyreduce:
   case 78:
 
 /* Line 1455 of yacc.c  */
-#line 602 "yacc.y"
+#line 648 "yacc.y"
     {
     printf("ELSE statement begins\n");
 }
@@ -2579,7 +2625,7 @@ yyreduce:
   case 79:
 
 /* Line 1455 of yacc.c  */
-#line 609 "yacc.y"
+#line 655 "yacc.y"
     {
 printf("While loop Ends\n"); 
 }
@@ -2588,7 +2634,7 @@ printf("While loop Ends\n");
   case 80:
 
 /* Line 1455 of yacc.c  */
-#line 613 "yacc.y"
+#line 659 "yacc.y"
     {
 printf("While loop starts\n"); 
 }
@@ -2597,7 +2643,7 @@ printf("While loop starts\n");
   case 81:
 
 /* Line 1455 of yacc.c  */
-#line 619 "yacc.y"
+#line 665 "yacc.y"
     {
 printf("Do While Scope Ends\n"); 
 }
@@ -2606,7 +2652,7 @@ printf("Do While Scope Ends\n");
   case 82:
 
 /* Line 1455 of yacc.c  */
-#line 624 "yacc.y"
+#line 670 "yacc.y"
     { 
                 printf("Do While Scope begins\n");
               }
@@ -2615,7 +2661,7 @@ printf("Do While Scope Ends\n");
   case 83:
 
 /* Line 1455 of yacc.c  */
-#line 632 "yacc.y"
+#line 678 "yacc.y"
     {
   printf("Function ends\n");
   symbolHier.updateCurrentScope(symbolHier.currentScopeTable->parent);
@@ -2625,7 +2671,7 @@ printf("Do While Scope Ends\n");
   case 84:
 
 /* Line 1455 of yacc.c  */
-#line 639 "yacc.y"
+#line 685 "yacc.y"
     {
 if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (5)].stringValue),(yyvsp[(2) - (5)].stringValue)))
 {
@@ -2640,7 +2686,7 @@ if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (5)].stringValue),(yyvsp[(2
   case 85:
 
 /* Line 1455 of yacc.c  */
-#line 648 "yacc.y"
+#line 694 "yacc.y"
     {
 if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (7)].stringValue),(yyvsp[(2) - (7)].stringValue)))
 {
@@ -2656,14 +2702,14 @@ if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (7)].stringValue),(yyvsp[(2
   case 86:
 
 /* Line 1455 of yacc.c  */
-#line 658 "yacc.y"
+#line 704 "yacc.y"
     { printf("Starting params list\n");}
     break;
 
   case 87:
 
 /* Line 1455 of yacc.c  */
-#line 663 "yacc.y"
+#line 709 "yacc.y"
     {
   SymbolTable* functionTable = new SymbolTable((yyvsp[(2) - (2)].stringValue), symbolHier.currentScopeTable, (yyvsp[(1) - (2)].stringValue));
   //add table as a child to current
@@ -2681,7 +2727,7 @@ if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (7)].stringValue),(yyvsp[(2
   case 88:
 
 /* Line 1455 of yacc.c  */
-#line 675 "yacc.y"
+#line 721 "yacc.y"
     {
   SymbolTable* functionTable = new SymbolTable((yyvsp[(2) - (2)].stringValue), symbolHier.currentScopeTable,(char*)"void");
   //add table as a child to current
@@ -2698,7 +2744,7 @@ if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (7)].stringValue),(yyvsp[(2
   case 89:
 
 /* Line 1455 of yacc.c  */
-#line 688 "yacc.y"
+#line 734 "yacc.y"
     {
 if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (4)].stringValue),(yyvsp[(2) - (4)].stringValue)))
 {
@@ -2714,14 +2760,14 @@ if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (4)].stringValue),(yyvsp[(2
   case 90:
 
 /* Line 1455 of yacc.c  */
-#line 698 "yacc.y"
+#line 744 "yacc.y"
     {}
     break;
 
   case 91:
 
 /* Line 1455 of yacc.c  */
-#line 700 "yacc.y"
+#line 746 "yacc.y"
     {
 if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (6)].stringValue),(yyvsp[(2) - (6)].stringValue)))
 {
@@ -2737,14 +2783,14 @@ if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (6)].stringValue),(yyvsp[(2
   case 92:
 
 /* Line 1455 of yacc.c  */
-#line 710 "yacc.y"
+#line 756 "yacc.y"
     { (yyval.stringValue) = (yyvsp[(1) - (1)].stringValue); }
     break;
 
   case 93:
 
 /* Line 1455 of yacc.c  */
-#line 714 "yacc.y"
+#line 760 "yacc.y"
     {
                       char* expr_value, *expr_label="";
                       vector <char*> expr_info = splitString((yyvsp[(3) - (5)].stringValue), ',');
@@ -2773,7 +2819,7 @@ if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (6)].stringValue),(yyvsp[(2
   case 94:
 
 /* Line 1455 of yacc.c  */
-#line 737 "yacc.y"
+#line 783 "yacc.y"
     {
                       char* reason = nullptr;
                       SymbolTable* foundTable = symbolHier.checkFunctionExists((yyvsp[(1) - (3)].stringValue), nullptr, reason);
@@ -2791,7 +2837,7 @@ if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (6)].stringValue),(yyvsp[(2
   case 95:
 
 /* Line 1455 of yacc.c  */
-#line 751 "yacc.y"
+#line 797 "yacc.y"
     {
                           quad.popLabel();
                           char* expr_value, *expr_label="";   
@@ -2805,21 +2851,21 @@ if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (6)].stringValue),(yyvsp[(2
   case 96:
 
 /* Line 1455 of yacc.c  */
-#line 759 "yacc.y"
+#line 805 "yacc.y"
     {(yyval.stringValue) = (yyvsp[(1) - (1)].stringValue);}
     break;
 
   case 97:
 
 /* Line 1455 of yacc.c  */
-#line 762 "yacc.y"
+#line 808 "yacc.y"
     {(yyval.stringValue) = "";}
     break;
 
   case 98:
 
 /* Line 1455 of yacc.c  */
-#line 764 "yacc.y"
+#line 810 "yacc.y"
     {
                     printf("||Return statement: %s\n", (yyvsp[(2) - (3)].stringValue));
                     char* expr_value, *expr_name="";
@@ -2847,7 +2893,7 @@ if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (6)].stringValue),(yyvsp[(2
   case 99:
 
 /* Line 1455 of yacc.c  */
-#line 786 "yacc.y"
+#line 832 "yacc.y"
     {
                     if (symbolHier.currentScopeTable->returnType == nullptr) {
                       yyerror("Return statement not allowed in this scope\n");
@@ -2863,14 +2909,14 @@ if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (6)].stringValue),(yyvsp[(2
   case 100:
 
 /* Line 1455 of yacc.c  */
-#line 797 "yacc.y"
+#line 843 "yacc.y"
     {}
     break;
 
   case 101:
 
 /* Line 1455 of yacc.c  */
-#line 808 "yacc.y"
+#line 854 "yacc.y"
     {
   symbolHier.updateCurrentScope(symbolHier.currentScopeTable->parent); 
 }
@@ -2879,7 +2925,7 @@ if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (6)].stringValue),(yyvsp[(2
   case 102:
 
 /* Line 1455 of yacc.c  */
-#line 813 "yacc.y"
+#line 859 "yacc.y"
     {
   SymbolTable* localTable = new SymbolTable(strdup(("Local" + to_string(num_scopes)).c_str()), symbolHier.currentScopeTable);
   num_scopes = num_scopes +1;
@@ -2894,70 +2940,70 @@ if(symbolHier.currentScopeTable->lookUp((yyvsp[(3) - (6)].stringValue),(yyvsp[(2
   case 103:
 
 /* Line 1455 of yacc.c  */
-#line 823 "yacc.y"
+#line 869 "yacc.y"
     {}
     break;
 
   case 104:
 
 /* Line 1455 of yacc.c  */
-#line 824 "yacc.y"
+#line 870 "yacc.y"
     {}
     break;
 
   case 105:
 
 /* Line 1455 of yacc.c  */
-#line 825 "yacc.y"
+#line 871 "yacc.y"
     { (yyval.stringValue) = (yyvsp[(1) - (1)].stringValue); }
     break;
 
   case 106:
 
 /* Line 1455 of yacc.c  */
-#line 831 "yacc.y"
+#line 877 "yacc.y"
     {}
     break;
 
   case 107:
 
 /* Line 1455 of yacc.c  */
-#line 836 "yacc.y"
+#line 882 "yacc.y"
     {}
     break;
 
   case 108:
 
 /* Line 1455 of yacc.c  */
-#line 837 "yacc.y"
+#line 883 "yacc.y"
     {}
     break;
 
   case 109:
 
 /* Line 1455 of yacc.c  */
-#line 840 "yacc.y"
+#line 886 "yacc.y"
     {}
     break;
 
   case 110:
 
 /* Line 1455 of yacc.c  */
-#line 841 "yacc.y"
+#line 887 "yacc.y"
     {}
     break;
 
   case 111:
 
 /* Line 1455 of yacc.c  */
-#line 842 "yacc.y"
+#line 888 "yacc.y"
     {}
     break;
 
 
 
 /* Line 1455 of yacc.c  */
-#line 2961 "y.tab.c"
+#line 3007 "y.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -3169,7 +3215,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 846 "yacc.y"
+#line 892 "yacc.y"
 
 
 void yyerror(const char *msg){
