@@ -6,7 +6,8 @@
   #include "Quadraples/Quadraples.h"
   int yylex(void);  
   void yyerror(const char *s);
-  void semantic_errors(const char *s); 
+  void semantic_errors(const char *s);
+  void semantic_warns(const char *s); 
   extern FILE* yyin;                          
   extern FILE* yyout;  
   int yylineno = 1;
@@ -315,7 +316,7 @@ startScope : '{' {
 
 endScope : '}' {
   symbolHier.updateCurrentScope(symbolHier.currentScopeTable->parent);                   
-} | error {
+} | error  {
   yyerror("Missing closing brace '}' at the end of scope.");
 }
 ;
@@ -569,6 +570,17 @@ void semantic_errors(const char *msg) {
       }
 
       fprintf(semantic_file, "line [%d]: Semantic Error: %s\n", yylineno, msg); 
+      fclose(semantic_file); // Close the file
+}
+
+void semantic_warns(const char *msg) {
+      FILE *semantic_file = fopen("semantic_errors.txt", "a");
+      if (semantic_file == NULL) {
+          fprintf(stderr, "Error: Could not open semantic_errors.txt for writing\n");
+          return;
+      }
+
+      fprintf(semantic_file, "line [%d]: Semantic Warning: %s\n", yylineno, msg); 
       fclose(semantic_file); // Close the file
 }
 

@@ -1,6 +1,8 @@
 #include "SymbolTable.h"
 #include "../Utils/utils.h"
 
+extern void semantic_warns(const char *msg);
+
 SymbolTable::SymbolTable(char *tableName, SymbolTable *parent, char *type)
     : tableName(tableName), parent(parent), returnType(type) {}
 
@@ -168,14 +170,22 @@ void SymbolTable::printTable(const string &filepath) const
     if (returnType)
     {
         // Print ordered table for function
-        for (const auto &entry : orderedTable)
+        for (const auto &entry : orderedTable){
             *output << entry.first << " : " << entry.second->getVariableName() << " (Parameter)" << endl;
+            
+        }
     }
     else
     {
         // Print unordered table for normal
-        for (const auto &entry : table)
+        for (const auto &entry : table){
             *output << entry.first << " : " << entry.second->getVariableName() << endl;
+            if(!entry.second->getIsAccessed()){
+                string warningMessage = "Variable " +string(entry.second->getVariableName()) + " is declared but not used";
+                semantic_warns(warningMessage.c_str());  // Use .c_str() to get const char*
+            }
+
+        }
     }
 
     // If we used a file stream, close it
