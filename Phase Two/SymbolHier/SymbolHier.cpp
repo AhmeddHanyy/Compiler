@@ -11,7 +11,7 @@ void SymbolHier::updateCurrentScope(SymbolTable *newTable)
 void SymbolHier::addSymbolTable(SymbolTable *newTable)
 {
     // Here we just add assuming the newTable is set correclty for parent and child
-    this->SymbolTables[newTable->tableName] = newTable;
+    this->SymbolTables.emplace(newTable->tableName, newTable);
 }
 
 void SymbolHier::addEntryToCurrentScope(char *name, char *type, char *initialValue, bool initialized, bool constant)
