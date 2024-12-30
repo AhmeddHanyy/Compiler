@@ -13,11 +13,11 @@ DIGIT       [0-9]
 LETTER      [a-zA-Z]
 IDENTIFIER  {LETTER}({LETTER}|{DIGIT}|_)*
 
-INTEGER_VAL  (0|[1-9][0-9]*)
-FLOAT_VAL    [0-9]+\.[0-9]+
+INTEGER_VAL  -?(0|[1-9][0-9]*)
+FLOAT_VAL    -?[0-9]+\.[0-9]+
 CHAR_VAL     \'.\'
 STRING_VAL   \"[^\"]*\"
-BOOL_VAL     (0|1)\b
+BOOL_VAL     (0|1|true|false)\b
 
 
 %%
@@ -79,13 +79,13 @@ BOOL_VAL     (0|1)\b
 
 {INTEGER_VAL}   { 
                     //printf("Token: INTEGER_VAL - %s\n", yytext); 
-                    yylval.intValue = strdup(yytext); 
+                    yylval.stringValue = strdup(yytext); 
                     return INTEGER_VAL; 
                  }
 
 {FLOAT_VAL}     { 
                     //printf("Token: FLOAT_VAL - %s\n", yytext); 
-                    yylval.floatValue = strdup(yytext); 
+                    yylval.stringValue = strdup(yytext); 
                     return FLOAT_VAL; 
                  }
 
@@ -103,43 +103,43 @@ BOOL_VAL     (0|1)\b
 
 {BOOL_VAL}      { 
                     //printf("Token: BOOL_VAL - %s\n", yytext); 
-                    yylval.boolValue = strdup(yytext); 
+                    yylval.stringValue = strdup(yytext); 
                     return BOOL_VAL; 
                  }
 
 "+"             { 
                     //printf("Token: PLUS\n"); 
-                    yylval.charValue = '+'; 
+                    yylval.stringValue = "+"; 
                     return PLUS; 
                  }
 
 "-"             { 
                     //printf("Token: MINUS\n"); 
-                    yylval.charValue = '-'; 
+                    yylval.stringValue = "-"; 
                     return MINUS; 
                  }
 
 "*"             { 
                     //printf("Token: MULTIPLY\n"); 
-                    yylval.charValue = '*'; 
+                    yylval.stringValue = "*"; 
                     return MULTIPLY; 
                  }
 
 "/"             { 
                     //printf("Token: DIVIDE\n"); 
-                    yylval.charValue = '/'; 
+                    yylval.stringValue = "/"; 
                     return DIVIDE; 
                  }
 
 "^"             { 
                     //printf("Token: POWER\n"); 
-                    yylval.charValue = '^'; 
+                    yylval.stringValue = "^"; 
                     return POWER; 
                  }
 
 "="             { 
                     //printf("Token: ASSIGN\n"); 
-                    yylval.charValue = '='; 
+                    yylval.stringValue = "="; 
                     return ASSIGN; 
                  }
 
@@ -157,7 +157,7 @@ BOOL_VAL     (0|1)\b
 
 "!"             { 
                     //printf("Token: NOT\n"); 
-                    yylval.charValue = '!'; 
+                    yylval.stringValue = "!"; 
                     return NOT; 
                  }
 
@@ -175,13 +175,13 @@ BOOL_VAL     (0|1)\b
 
 "<"             { 
                     //printf("Token: LT\n"); 
-                    yylval.charValue = '<'; 
+                    yylval.stringValue = "<"; 
                     return LT; 
                  }
 
 ">"             { 
                     //printf("Token: GT\n"); 
-                    yylval.charValue = '>'; 
+                    yylval.stringValue = ">"; 
                     return GT; 
                  }
 

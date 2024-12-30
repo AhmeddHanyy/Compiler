@@ -62,6 +62,12 @@ char *NOTing(char *value)
 vector<char *> splitString(const char *str, char delimiter)
 {
     vector<char *> result;
+    if (str[0] == '\0')
+    {
+        // Return a vector with one empty string
+        result.push_back(_strdup(""));
+        return result;
+    }
     stringstream ss(str);
     string token;
 

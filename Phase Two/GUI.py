@@ -178,7 +178,7 @@ class MyDialog(QDialog, Ui_Dialog):
                 pass  # This will clear the file
 
             # Run the compiler.exe command with input.txt as an argument
-            subprocess.run(["./a.exe", "input.txt"])
+            subprocess.run([r"C:\Users\Marwan\Desktop\College\5_1\Compilers\Compiler\Phase Two\a.exe", "input.txt"])
 
             # Read the result from output.txt and display it in result_text QTextEdit
             res = ""

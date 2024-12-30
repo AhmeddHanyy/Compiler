@@ -12,6 +12,7 @@ string Quadraples::generateLabel(const string &prefix, int count) const
 
 void Quadraples::insertEntry(const string &operation, const string &arg1, const string &arg2, const string &result)
 {
+    printf("insertEntry: Inserting entry: %s %s %s %s\n", operation.c_str(), arg1.c_str(), arg2.c_str(), result.c_str());
     QuadrapleEntry *entry = new QuadrapleEntry(operation, arg1, arg2, result);
     if (isFunctionFlag == 0)
     {
@@ -43,15 +44,17 @@ void Quadraples::addUnary(char *operation, char *result, bool hasLabel)
 
     // pop the last label from the stack
     if (hasLabel)
+    {
+        res = labels.top();
         popLabel();
+    }
     string arg1 = labels.top();
+    printf("_________________________");
     popLabel();
-
+    printf("_________________________");
     // create a new entry
     insertEntry(op, arg1, "", res);
     printf("Inserted entry: %s %s %s %s\n", op.c_str(), arg1.c_str(), "", res.c_str());
-    // pushLabel(res);
-    // printf("Pushed label: %s\n", res.c_str());
 }
 
 void Quadraples::addBinary(char *operation, char *result)
@@ -231,8 +234,8 @@ void Quadraples::pushLabel(char *label)
 void Quadraples::popLabel()
 {
     string label = labels.top();
-    printf("<--Popped label: %s\n", label.c_str());
     labels.pop();
+    printf("<--Popped label: %s\n", label.c_str());
 }
 
 void Quadraples::incEntryCount()
