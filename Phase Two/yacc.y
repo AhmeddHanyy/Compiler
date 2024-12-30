@@ -5,7 +5,8 @@
   #include "SymbolHier/SymbolHier.h"
   #include "Quadraples/Quadraples.h"
   int yylex(void);  
-  void yyerror(const char *s);  
+  void yyerror(const char *s);
+  void semantic_errors(const char *s); 
   extern FILE* yyin;                          
   extern FILE* yyout;  
   int yylineno = 1;
@@ -42,7 +43,7 @@
 
 
 
-%type <stringValue> dataType program_start_mark factor line start_line_mark ID expression arithExpression compExpression andLogExpression logExpression notLogExpression scope startScope endScope ifStatement ifScope elseScope IF_mark ELSE_mark WHILE_mark DO_mark doWhile function functionSig functionParams defaultParams functionCall functionCallParams epsilon returnStatement forLoop FOR_mark forLoop1 switchCase multiCase singleCase term1 term2 term3
+%type <stringValue> semi_colon_error dataType program_start_mark factor line start_line_mark ID expression arithExpression compExpression andLogExpression logExpression notLogExpression scope startScope endScope ifStatement ifScope elseScope IF_mark ELSE_mark WHILE_mark DO_mark doWhile function functionSig functionParams defaultParams functionCall functionCallParams epsilon returnStatement forLoop FOR_mark forLoop1 switchCase multiCase singleCase term1 term2 term3
 
 %%
 
@@ -70,19 +71,21 @@ script :
 start_line_mark : {printf("Processing line %d in the script.\n",yylineno);};
 
 line : 
-        dataType ID ';' {
+        dataType ID semi_colon_error {
                 SymbolTable* entryScope = symbolHier.getEntryScope($2, $1);
                 if (entryScope) {
-                  yyerror("Variable is already declared\n");
+                  semantic_errors("Variable is already declared\n");
                 } else {
                   printf("Variable %s declared\n", $2);
                   symbolHier.addEntryToCurrentScope($2,$1,"-0",false,false);
                 }
+                
               }
-      | dataType ID ASSIGN expression ';' {
+
+      | dataType ID ASSIGN expression semi_colon_error {
                 SymbolTable* entryScope = symbolHier.getEntryScope($2, $1);
                 if (entryScope) {
-                    yyerror("Variable is already declared\n");
+                    semantic_errors("Variable is already declared\n");
                 } else {
                   // Create an instance of SemanticChecker
                   SemanticChecker semanticChecker;
@@ -90,7 +93,7 @@ line :
                   // Check if the types are compatible
                   if (!semanticChecker.matchTypes($1, $4))
                   {
-                    yyerror("Type mismatch between data type and expression\n");
+                    semantic_errors("Type mismatch between data type and expression\n");
                   }
                   else
                   {
@@ -104,18 +107,19 @@ line :
                     quad.resetEntryCount();
                   }
                 }
+                 
               }
-      | CONST  dataType ID ASSIGN expression ';'{
+      | CONST  dataType ID ASSIGN expression semi_colon_error{
                 SymbolTable* entryScope = symbolHier.getEntryScope($3);
                 if (entryScope) {
-                    yyerror("Variable is already declared\n");
+                    semantic_errors("Variable is already declared\n");
                 } else {
                     // Create an instance of SemanticChecker
                     SemanticChecker semanticChecker;
 
                     // Check if the types are compatible
                     if (!semanticChecker.matchTypes($2, $5)) {
-                        yyerror("Type mismatch between data type and expression\n");
+                        semantic_errors("Type mismatch between data type and expression\n");
                     } else {
                         // Assuming compatible, add the entry to the current scope as a constant
                         symbolHier.addEntryToCurrentScope($3, $2, $5, true, true);
@@ -126,11 +130,12 @@ line :
                         quad.resetEntryCount();
                     }
                 }
+               
        }
-      | ID ASSIGN expression  ';'{
+      | ID ASSIGN expression semi_colon_error{
               SymbolTable* entryScope = symbolHier.getEntryScope($1);
               if (!entryScope) {
-                  yyerror("Variable is not declared\n");
+                  semantic_errors("Variable is not declared\n");
               } 
               else {
                   // Create an instance of SemanticChecker
@@ -139,11 +144,11 @@ line :
 
                   // Check if the variable is a constant
                   if (entry->getIsConstant()) {
-                      yyerror("Cannot assign to a constant variable\n");
+                      semantic_errors("Cannot assign to a constant variable\n");
                   } else {
                       // Check if the types are compatible
                       if (!semanticChecker.matchTypes(entry->getVariableType(), $3)) {
-                          yyerror("Type mismatch between variable and expression\n");
+                          semantic_errors("Type mismatch between variable and expression\n");
                       } else {
                           // Assuming compatible, update the value of the variable
                           entry->setValue($3);
@@ -156,6 +161,7 @@ line :
                       }
                   }
               }
+             
             }
       | scope {}
       | ifStatement {}
@@ -165,11 +171,21 @@ line :
       | functionCall {}
       | returnStatement {}
       | forLoop {}
-      | BREAK ';'{}
-      | CONTINUE ';' {}
+      | BREAK semi_colon_error{
+         
+      }
+      | CONTINUE semi_colon_error {
+      
+                 
+      }
       | switchCase
+      
 ;
-
+semi_colon_error: ';' {}
+                | epsilon{
+                    yyerror("Missing ';'");
+                   }
+;
 
 dataType : INT { $$ = "int";  }
          | FLOAT { $$ = "float";  }
@@ -265,13 +281,13 @@ factor : INTEGER_VAL { $$ = $1; }
 
               if(!entryScope)
               {
-                yyerror("Variable is not declared\n");
+                semantic_errors("Variable is not declared\n");
               }else{
                 //variable is declared and we have its scope table now lets get the entry from the table
                 SymbolTableEntry* entry = entryScope->getEntry($1);
                 if(!entry->getIsInitialized())
                 {
-                  yyerror("Variable is not initiliazed\n");
+                  semantic_errors("Variable is not initiliazed\n");
                 }
                 entry->setIsAccessed(true);
                 $$ = entry->getValue();
@@ -294,12 +310,12 @@ startScope : '{' {
   symbolHier.addSymbolTable(localTable);
   //update current scope
   symbolHier.updateCurrentScope(localTable);                
-}
+} 
 ;
 
 endScope : '}' {
   symbolHier.updateCurrentScope(symbolHier.currentScopeTable->parent);                   
-}
+} 
 ;
 /*####################################################################################*/
 // IF-Condition
@@ -321,7 +337,7 @@ elseIfStatements : elseIfStatement elseIfStatements {} // multiple else-if state
 elseIfStatement : ELSE_IF_mark '(' expression ')' scope {
     SemanticChecker semanticChecker;
     if (!semanticChecker.isBool($3)) {
-      yyerror("Condition expression must be of boolean type\n");
+      semantic_errors("Condition expression must be of boolean type\n");
     } else {
       printf("ELSE IF statement ends\n");
     }
@@ -337,7 +353,7 @@ ifScope : IF_mark '(' expression ')' scope {
     SemanticChecker semanticChecker;
     if (!semanticChecker.isBool($3)) {
         printf("Condition expression: %s\n", $3);
-        yyerror("Condition expression must be of boolean type\n");
+        semantic_errors("Condition expression must be of boolean type\n");
     } else {
         printf("IF statement ends\n");
     }
@@ -394,7 +410,7 @@ function : functionSigStart functionSig scope {
 functionSig : '(' dataType ID functionParams ')' {
 if(symbolHier.currentScopeTable->lookUp($3,$2))
 {
-  yyerror("Variable is already in param list\n");
+  semantic_errors("Variable is already in param list\n");
 }else{
   symbolHier.addEntryToCurrentScope($3,$2,"-0",false,false);
 }
@@ -402,7 +418,7 @@ if(symbolHier.currentScopeTable->lookUp($3,$2))
             |  '(' dataType ID ASSIGN expression defaultParams ')' {
 if(symbolHier.currentScopeTable->lookUp($3,$2))
 {
-  yyerror("Variable is already in param list\n");
+  semantic_errors("Variable is already in param list\n");
 }
 //check dataType and expression type compatible or not
 
@@ -435,7 +451,7 @@ symbolHier.updateCurrentScope(functionTable);
 functionParams : ',' dataType ID functionParams{
 if(symbolHier.currentScopeTable->lookUp($3,$2))
 {
-  yyerror("Variable is already in param list\n");
+  semantic_errors("Variable is already in param list\n");
 }else{
   symbolHier.addEntryToCurrentScope($3,$2,"-0",false,false);
 }
@@ -446,7 +462,7 @@ if(symbolHier.currentScopeTable->lookUp($3,$2))
 defaultParams : ',' dataType ID ASSIGN expression defaultParams  {
 if(symbolHier.currentScopeTable->lookUp($3,$2))
 {
-  yyerror("Variable is already in param list\n");
+  semantic_errors("Variable is already in param list\n");
 }
 //check dataType and expression type compatible or not
 
@@ -467,7 +483,7 @@ printf("--params: %s\n",params);
 char* reason = nullptr;
 SymbolTable* foundTable = symbolHier.checkFunctionExists($1, params,reason);
 if(!foundTable){
-  yyerror(reason);
+  semantic_errors(reason);
 }else{
   //found
   $$ = foundTable->returnType;
@@ -543,6 +559,16 @@ singleCase : CASE INTEGER_VAL ':' script {}
 void yyerror(const char *msg){
   fprintf(yyout, "line [%d]: Error: %s\n", yylineno, msg);
 }
+void semantic_errors(const char *msg) {
+      FILE *semantic_file = fopen("semantic_errors.txt", "a");
+      if (semantic_file == NULL) {
+          fprintf(stderr, "Error: Could not open semantic_errors.txt for writing\n");
+          return;
+      }
+
+      fprintf(semantic_file, "line [%d]: Semantic Error: %s\n", yylineno, msg); 
+      fclose(semantic_file); // Close the file
+}
 
 int main(int argc, char** argv){
 
@@ -553,7 +579,7 @@ int main(int argc, char** argv){
     return 1;
   }
   yyin = file;
-  yyout = fopen("errors.txt", "w");
+  yyout = fopen("syntax_errors.txt", "w");
 
 if (yyparse() == 0) {
     printf("Program parsed successfully.\n");
