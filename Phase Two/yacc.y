@@ -608,7 +608,7 @@ elseIfStatements : elseIfStatement elseIfStatements {} // multiple else-if state
                  | elseScope {} // matched with else
 ;
 
-elseIfStatement : ELSE_IF_mark '(' expression ')' scope {
+elseIfStatement : ELSE_IF_mark '(' expression after_expressions_eval')' scope {
     SemanticChecker semanticChecker;
     if (!semanticChecker.isBool($3)) {
       semantic_errors("Condition expression must be of boolean type\n");
@@ -625,7 +625,7 @@ elseScope : ELSE_mark scope {
 }
 ;
 
-ifScope : IF_mark '(' expression ')' scope {
+ifScope : IF_mark '(' expression after_expressions_eval')' scope {
     SemanticChecker semanticChecker;
     if (!semanticChecker.isBool($3)) {
         printf("Condition expression: %s\n", $3);

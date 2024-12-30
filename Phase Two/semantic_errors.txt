@@ -1,0 +1,4 @@
+Semantic Warning: Variable z is declared but not used
+Semantic Warning: Variable z is declared but not used
+Semantic Warning: Variable z is declared but not used
+Semantic Warning: Variable z is declared but not used

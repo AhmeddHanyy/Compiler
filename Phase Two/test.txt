@@ -1,11 +1,17 @@
 int x = 5;
 bool y = true;
 
-bool z = (x > 7) && (y == true); 
+ 
 
-while (z && y && (x > 7)) {
-    z = false;
-    while (x < 2) {
-        x = x + 1;
-    }
+if ((x > 7) && (y == true)) {
+    bool z = false;
+}
+else if ((x+7<10) || (y == false)) {
+    bool z = true;
+}
+else if (x+7==10) {
+    bool z = false;
+}
+else {
+    bool z = true;
 }

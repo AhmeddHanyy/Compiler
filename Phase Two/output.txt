@@ -3,21 +3,22 @@
  GT x 7 T0
  EQ y true T1
  AND T0 T1 T2
- MOV z  T2
- Loop0:   
- AND z y T1
- GT x 7 T2
- AND T1 T2 T3
- CMP T3 true 
+ CMP T2 true 
  JNE   Line0
  MOV z  false
- Loop1:   
- LT x 2 T1
- CMP T1 true 
- JNE   Line1
- ADD x 1 T5
- MOV x  T5
- JMP   Loop1
- Line1:   
- JMP   Loop0
  Line0:   
+ ADD x 7 T1
+ LT T1 10 T2
+ EQ y false T3
+ OR T2 T3 T4
+ CMP T4 true 
+ JNE   Line1
+ MOV z  true
+ Line1:   
+ ADD x 7 T1
+ EQ T1 10 T2
+ CMP T2 true 
+ JNE   Line2
+ MOV z  false
+ Line2:   
+ MOV z  true
