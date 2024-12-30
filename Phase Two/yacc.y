@@ -415,7 +415,7 @@ if(symbolHier.currentScopeTable->lookUp($3,$2))
 {
   semantic_errors("Variable is already in param list\n");
 }else{
-  symbolHier.addEntryToCurrentScope($3,$2,"-0",false,false);
+  symbolHier.addEntryToCurrentScope($3,$2,"-0",true,false);
 }
 }
             |  '(' dataType ID ASSIGN expression defaultParams ')' {
@@ -456,7 +456,7 @@ if(symbolHier.currentScopeTable->lookUp($3,$2))
 {
   semantic_errors("Variable is already in param list\n");
 }else{
-  symbolHier.addEntryToCurrentScope($3,$2,"-0",false,false);
+  symbolHier.addEntryToCurrentScope($3,$2,"-0",true,false);
 }
 
 }
