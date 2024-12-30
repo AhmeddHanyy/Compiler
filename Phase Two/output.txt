@@ -1,6 +1,17 @@
- MOV x  -5
- NEG x  T0
- MOV y  T0
- ADD 5 6 T0
- NEG T0  T1
- MOV z  T1
+ Loop0:   
+ MOV i  0
+ LT i 5 T0
+ GT i 0 T1
+ AND T0 T1 T2
+ CMP T2 true 
+ JNE   Line0
+ MUL i 2 T6
+ MOV z  5
+ EQ i 0 T0
+ CMP T0 true 
+ JNE   Line1
+ MOV s  "AAAAAAAAAA"
+ Line1:   
+ MOV i  T6
+ JMP   Loop0
+ Line0:   

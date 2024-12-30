@@ -32,16 +32,6 @@ void Quadraples::addUnary(char *operation, char *result, bool hasLabel)
     string op(operation);
     printf("Adding unary operation: %s %s\n", operation, result);
 
-    // print labels
-    printf("--Labels stack:--\n");
-    stack<string> temp = labels;
-    while (!temp.empty())
-    {
-        printf("%s ", temp.top().c_str());
-        temp.pop();
-    }
-    printf("\n");
-
     // pop the last label from the stack
     if (hasLabel)
     {
@@ -49,9 +39,7 @@ void Quadraples::addUnary(char *operation, char *result, bool hasLabel)
         popLabel();
     }
     string arg1 = labels.top();
-    printf("_________________________");
     popLabel();
-    printf("_________________________");
     // create a new entry
     insertEntry(op, arg1, "", res);
     printf("Inserted entry: %s %s %s %s\n", op.c_str(), arg1.c_str(), "", res.c_str());
@@ -74,7 +62,7 @@ void Quadraples::addBinary(char *operation, char *result)
     pushLabel(strdup(res.c_str()));
 }
 
-void Quadraples::addBranch(char *jumpType)
+char *Quadraples::addBranch(char *jumpType)
 {
     // convert char* to string
     string jump(jumpType);
@@ -83,6 +71,7 @@ void Quadraples::addBranch(char *jumpType)
     string line = generateLabel("Line", lineCount);
     incEntryCount();
     lines.push(line);
+    ++lineCount;
 
     // pop the last two labels from the stack
     string arg2 = labels.top();
@@ -92,21 +81,22 @@ void Quadraples::addBranch(char *jumpType)
 
     // check the jump type and insert the appropriate entry
     string jmp;
-    if (jumpType == ">")
+    if (strcmp(jumpType, ">") == 0)
         jmp = "JLE";
-    else if (jumpType == "<")
+    else if (strcmp(jumpType, "<") == 0)
         jmp = "JGE";
-    else if (jumpType == "==")
+    else if (strcmp(jumpType, "==") == 0)
         jmp = "JNE";
-    else if (jumpType == "!=")
+    else if (strcmp(jumpType, "!=") == 0)
         jmp = "JE";
-    else if (jumpType == ">=")
+    else if (strcmp(jumpType, ">=") == 0)
         jmp = "JLT";
-    else if (jumpType == "<=")
+    else if (strcmp(jumpType, "<=") == 0)
         jmp = "JGT";
 
     insertEntry("CMP", arg1, arg2, "");
     insertEntry(jmp, "", "", line);
+    return strdup(line.c_str());
 }
 
 void Quadraples::addLine()
@@ -137,6 +127,7 @@ void Quadraples::addLoopStart()
 
 void Quadraples::endLoop()
 {
+    printf("loops.empty(): %d, lines.empty(): %d\n", loops.empty(), lines.empty());
     if (loops.empty() || lines.empty())
         return;
     string loop = loops.top();
@@ -227,15 +218,44 @@ char *Quadraples::generateTempVar()
 void Quadraples::pushLabel(char *label)
 {
     string labelStr(label);
-    printf("-->Pushed label: %s\n", labelStr.c_str());
+    printf("-->Pushing label: %s\n", labelStr.c_str());
     labels.push(labelStr);
+
+    printf("--Labels stack:--\n");
+    stack<string> temp = labels;
+    while (!temp.empty())
+    {
+        printf("%s ", temp.top().c_str());
+        temp.pop();
+    }
+    printf("\n---------\n");
 }
 
 void Quadraples::popLabel()
 {
     string label = labels.top();
+    printf("<--Popping label: %s\n", label.c_str());
     labels.pop();
-    printf("<--Popped label: %s\n", label.c_str());
+
+    printf("--Labels stack:--\n");
+    stack<string> temp = labels;
+    while (!temp.empty())
+    {
+        printf("%s ", temp.top().c_str());
+        temp.pop();
+    }
+    printf("\n---------\n");
+}
+
+char *Quadraples::getTopLabel()
+{
+    string label = labels.top();
+    return strdup(label.c_str());
+}
+
+int Quadraples::getLabelsLength()
+{
+    return labels.size();
 }
 
 void Quadraples::incEntryCount()

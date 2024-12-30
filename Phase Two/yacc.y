@@ -49,6 +49,8 @@
 
 %type <stringValue> semi_colon_error dataType program_start_mark Comparator factor line start_line_mark ID expression arithExpression compExpression andLogExpression logExpression notLogExpression scope startScope endScope ifStatement ifScope elseScope IF_mark ELSE_mark WHILE_mark DO_mark doWhile function functionSig functionParams defaultParams functionCall functionCallParams epsilon returnStatement forLoop FOR_mark forLoop1 switchCase multiCase singleCase term1 term2 term3
 %type <stringValue> EQ NEQ LT GT LE GE IDCase
+%type <stringValue> semi_colon_error dataType after_expressions_eval program_start_mark Comparator factor line start_line_mark ID expression arithExpression compExpression andLogExpression logExpression notLogExpression scope startScope endScope ifStatement ifScope elseScope IF_mark ELSE_mark WHILE_mark DO_mark doWhile function functionSig functionParams defaultParams functionCall functionCallParams epsilon returnStatement forLoop FOR_mark forLoop1 switchCase multiCase singleCase term1 term2 term3
+%type <stringValue> EQ NEQ LT GT LE GE
 
 %%
 
@@ -114,15 +116,11 @@ line :
                   else
                   {
                     symbolHier.addEntryToCurrentScope($2, $1, expr_value, true, false);
-                    printf("AAAAAAAAAAAAAAAAAAAAAA\n");
                     if (strcmp(expr_name, "") != 0) {
-                      printf("BBBBBBBBBBBBBBBBBBBBBBBBB");
                       quad.addUnary("MOV", expr_name, true);
                     } else {
-                      printf("CCCCCCCCCCCCCCCCCCCCCCCCCCCCC");
                       quad.addUnary("MOV", expr_value);
                     }
-                    printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
                     quad.resetEntryCount();
                   }
                 }
@@ -208,7 +206,11 @@ line :
       | whileLoop  {}
       | doWhile {}
       | function {}
-      | functionCall {}
+      | functionCall {
+        $$ = $1;
+        char* label = quad.generateTempVar();
+        quad.addBinary("CALL", label);
+      }
       | returnStatement {}
       | forLoop {}
       | BREAK semi_colon_error{
@@ -224,6 +226,7 @@ line :
 semi_colon_error: ';' {}
                 | epsilon{
                     yyerror("Missing ';'");
+                    $$ = $1;
                    }
 ;
 
@@ -240,9 +243,13 @@ ID : IDENTIFIER {
    ;
 
 /*#########################################################################*/
-expression : logExpression{$$ = $1;}
+expression : logExpression{
+                            $$ = $1;
+                            printf("logExpression: %s\n", $1);
+                          }
            | functionCall {
                             $$ = $1;
+                            printf("AAAA Function Call: %s\n", $1);
                             char* label = quad.generateTempVar();
                             quad.addBinary("CALL", label);
                           }
@@ -255,57 +262,124 @@ expression : logExpression{$$ = $1;}
 
 // Logical Expressions
 logExpression : logExpression OR andLogExpression {
-  // Add quad for logical OR operation
-  char* tempVar = quad.generateTempVar();
-  quad.addBinary("OR", tempVar);
-  $$ = tempVar; // result of OR is stored in a temporary variable
-}
+                  char* right_expr_value, *left_expr_value;
+                  vector <char*> expr_info = splitString($3, ',');
+                  right_expr_value = expr_info[0];
+                  expr_info = splitString($1, ',');
+                  left_expr_value = expr_info[0];
+                  // Check if the types are compatible
+                  SemanticChecker semanticChecker;
+                  if (!semanticChecker.matchTypes(left_expr_value, right_expr_value)) {
+                    semantic_errors("Type mismatch between left and right expressions\n");
+                    $$ = "";
+                  }
+                  else if (strcmp(left_expr_value, "bool") != 0) {
+                    semantic_errors("Invalid operation for non-boolean types\n");
+                    $$ = "";
+                  }
+                  else {
+                    char* tempVar = quad.generateTempVar();
+                    quad.addBinary("OR", tempVar);
+                    $$ = concatenateTwoStrings(right_expr_value, tempVar, ','); // result of addition is stored in a temporary variable
+                  }
+                }
               | andLogExpression {
   $$ = $1; // propagate the result of the andLogExpression
 }
 
 andLogExpression : andLogExpression AND notLogExpression {
-  // Add quad for logical AND operation
-  char* tempVar = quad.generateTempVar();
-  quad.addBinary("AND", tempVar);
-  $$ = tempVar; // result of AND is stored in a temporary variable
-}
+                  char* right_expr_value, *left_expr_value;
+                  vector <char*> expr_info = splitString($3, ',');
+                  right_expr_value = expr_info[0];
+                  expr_info = splitString($1, ',');
+                  left_expr_value = expr_info[0];
+                  // Check if the types are compatible
+                  SemanticChecker semanticChecker;
+                  if (!semanticChecker.matchTypes(left_expr_value, right_expr_value)) {
+                    semantic_errors("Type mismatch between left and right expressions\n");
+                    $$ = "";
+                  }
+                  else if (strcmp(left_expr_value, "bool") != 0) {
+                    semantic_errors("Invalid operation for non-boolean\n");
+                    $$ = "";
+                  }
+                  else {
+                    char* tempVar = quad.generateTempVar();
+                    quad.addBinary("AND", tempVar);
+                    $$ = concatenateTwoStrings(right_expr_value, tempVar, ','); // result of addition is stored in a temporary variable
+                  }
+                }
                 | notLogExpression {
   $$ = $1; // propagate the result of the notLogExpression
 }
 
 notLogExpression : NOT notLogExpression {
-  // Add quad for logical NOT operation
-  char* tempVar = quad.generateTempVar();
-  quad.addUnary("NOT", tempVar);
-  $$ = tempVar; // result of NOT is stored in a temporary variable
-}
-               | compExpression {
-  $$ = $1; // propagate the result of the comparison expression
-}
+          char* expr_value, *expr_name;
+          vector <char*> expr_info = splitString($2, ',');
+          expr_value = expr_info[0];
+          expr_name = expr_info[1];
+
+          // check if it is a float / int
+          SemanticChecker semanticChecker;
+          char* expr_type = semanticChecker.determineType(expr_value);
+          if (strcmp(expr_type, "bool") != 0) {
+            semantic_errors("Invalid operation for non-boolean types\n");
+            $$ = "";
+          } else {
+            char* tempVar = quad.generateTempVar();
+            quad.addUnary("NOT", tempVar);
+            quad.pushLabel(tempVar);
+            $$ = concatenateTwoStrings(expr_value, tempVar, ',');
+          }
+        }
+      | compExpression {
+        $$ = $1; 
+        printf("compExpression: %s\n", $1);
+      }
 
 /* Comparison Expressions */
 compExpression : compExpression Comparator arithExpression {
-  // Add quad for comparison operation
-  char* tempVar = quad.generateTempVar();
-  quad.addBinary($2, tempVar);
-  $$ = tempVar; // result of comparison is stored in a temporary variable
-}
+                char* right_expr_value, *left_expr_value;
+                vector <char*> expr_info = splitString($3, ',');
+                right_expr_value = expr_info[0];
+                expr_info = splitString($1, ',');
+                left_expr_value = expr_info[0];
+
+                printf("|||Left Expression: %s\n", left_expr_value);
+                printf("|||Right Expression: %s\n", right_expr_value);
+
+                // Check if the types are compatible
+                SemanticChecker semanticChecker;
+                if (!semanticChecker.matchTypes(left_expr_value, right_expr_value)) {
+                  semantic_errors("Type mismatch between left and right expressions\n");
+                  $$ = "";
+                }
+                else if (strcmp(left_expr_value, "bool") != 0 && strcmp(left_expr_value, "int") != 0 && strcmp(left_expr_value, "float") != 0) {
+                  semantic_errors("Invalid operation for non-numeric/boolean types\n");
+                  $$ = "";
+                }
+                else {
+                  char* tempVar = quad.generateTempVar();
+                  quad.addBinary($2, tempVar);
+                  $$ = concatenateTwoStrings("bool", tempVar, ','); // result of addition is stored in a temporary variable
+                }
+              }
               | arithExpression {
   $$ = $1; // propagate the result of the arithmetic expression
 }
 
-Comparator : EQ {$$ = $1;}
-           | NEQ  {$$ = $1;}
-           | LT {$$ = $1;}
-           | GT {$$ = $1;}
-           | LE {$$ = $1;}
-           | GE {$$ = $1;} ;
+Comparator : EQ {$$ = "EQ";}
+           | NEQ  {$$ = "NEQ";}
+           | LT {$$ = "LT";}
+           | GT {$$ = "GT";}
+           | LE {$$ = "LE";}
+           | GE {$$ = "GE";}
 
 /* Arithmetic Expressions */
-arithExpression : term1 {
-  $$ = $1; // propagate the result of the term1
-}
+arithExpression : 
+            term1 {
+              $$ = $1; // propagate the result of the term1
+             }
           | arithExpression PLUS term1 {
                   char* right_expr_value, *left_expr_value;
                   vector <char*> expr_info = splitString($3, ',');
@@ -352,8 +426,8 @@ arithExpression : term1 {
                 }
 
 term1 : term2 {
-  $$ = $1; // propagate the result of term2
-}
+          $$ = $1; // propagate the result of term2
+        }
       | term1 MULTIPLY term2 {
                   char* right_expr_value, *left_expr_value;
                   vector <char*> expr_info = splitString($3, ',');
@@ -424,10 +498,6 @@ term2 : term3 {
                     $$ = concatenateTwoStrings(right_expr_value, tempVar, ','); // result of addition is stored in a temporary variable
                   }
                 }
-
-
-
-/* Factor Handling */
 term3 : MINUS term3 {
           char* expr_value, *expr_name;
           vector <char*> expr_info = splitString($2, ',');
@@ -494,6 +564,8 @@ factor :
                   semantic_errors("Variable is not initiliazed\n");
                 }
                 entry->setIsAccessed(true);
+                printf("|| entry->getValue(): %s\n", entry->getValue());
+                printf("|| entry->getVariableName(): %s\n", entry->getVariableName());
                 $$ = concatenateTwoStrings(entry->getValue(), entry->getVariableName(), ',');
               }
             }
@@ -540,68 +612,70 @@ elseIfStatements : elseIfStatement elseIfStatements {} // multiple else-if state
                  | elseScope {} // matched with else
 ;
 
-elseIfStatement : ELSE_IF_mark '(' expression ')' scope {
+elseIfStatement : ELSE_IF_mark '(' expression after_expressions_eval')' scope {
     SemanticChecker semanticChecker;
     if (!semanticChecker.isBool($3)) {
       semantic_errors("Condition expression must be of boolean type\n");
     } else {
       printf("ELSE IF statement ends\n");
+      quad.addLine();
     }
 }
 ;
 
 elseScope : ELSE_mark scope {
     printf("ELSE statement ends\n");
+    quad.addLine();
 }
 ;
 
-ifScope : IF_mark '(' expression ')' scope {
+ifScope : IF_mark '(' expression after_expressions_eval')' scope {
     SemanticChecker semanticChecker;
     if (!semanticChecker.isBool($3)) {
         printf("Condition expression: %s\n", $3);
         semantic_errors("Condition expression must be of boolean type\n");
     } else {
         printf("IF statement ends\n");
+        quad.addLine();
     }
-}
-;
+};
 
 IF_mark : IF {
     printf("IF statement begins\n");
-}
-;
+};
 
 ELSE_IF_mark : ELSE IF {
     printf("ELSE IF statement begins\n");
-}
-;
+};
 
 ELSE_mark : ELSE {
     printf("ELSE statement begins\n");
-}
-;
+};
 
 /*############################################################################################*/
 //While Loop
-whileLoop : WHILE_mark '(' expression ')' scope {
-printf("While loop Ends\n"); 
+whileLoop : WHILE_mark '(' expression after_expressions_eval ')' scope {
+  quad.endLoop(); 
+};
+
+after_expressions_eval : {
+  quad.pushLabel("true");
+  quad.addBranch("==");
 }
-;
+
 WHILE_mark : WHILE {
-printf("While loop starts\n"); 
+  quad.addLoopStart();
 }
 ;
 /*###############################################################################################*/
 //Do WHILE
-doWhile : DO_mark scope WHILE '(' expression ')' {
-printf("Do While Scope Ends\n"); 
-}
-            ;
+doWhile : DO_mark scope WHILE '(' expression after_expressions_eval')' semi_colon_error {
+  quad.endLoop(); 
+};
 
 DO_mark : DO { 
-                printf("Do While Scope begins\n");
-              }
-        ;
+                quad.addLoopStart();
+             };
 
 /*##################################################################################################*/
 //FUNCTIONS
@@ -609,9 +683,6 @@ DO_mark : DO {
 function : functionSigStart functionSig scope {
   printf("Function ends\n");
   symbolHier.updateCurrentScope(symbolHier.currentScopeTable->parent);
-  // Use quads to add the function end label
-  quad.insertEntry("RET", "", "", "");
-  quad.isFunctionFlag = 0;
 }
 ;
 
@@ -621,7 +692,8 @@ if(symbolHier.currentScopeTable->lookUp($3,$2))
 {
   semantic_errors("Variable is already in param list\n");
 }else{
-  symbolHier.addEntryToCurrentScope($3,$2,"-0",true,false);
+  quad.popLabel();
+  symbolHier.addEntryToCurrentScope($3,$2,$2,true,false);
 }
 }
             |  '(' dataType ID ASSIGN expression defaultParams ')' {
@@ -649,6 +721,7 @@ functionSigStart: dataType ID {
   // Use quads to add the function label
   quad.isFunctionFlag = 1;
   quad.insertEntry(concatenateTwoStrings($2,":"),"","","");
+  quad.popLabel();
 }
 | VOID ID {
   SymbolTable* functionTable = new SymbolTable($2, symbolHier.currentScopeTable,(char*)"void");
@@ -663,12 +736,13 @@ functionSigStart: dataType ID {
 }
 ;
 
-functionParams : ',' dataType ID functionParams{
+functionParams : ',' dataType ID functionParams {
 if(symbolHier.currentScopeTable->lookUp($3,$2))
 {
   semantic_errors("Variable is already in param list\n");
 }else{
-  symbolHier.addEntryToCurrentScope($3,$2,$3,true,false);
+  quad.popLabel();
+  symbolHier.addEntryToCurrentScope($3,$2,$2,true,false);
 }
 
                   }
@@ -684,19 +758,29 @@ if(symbolHier.currentScopeTable->lookUp($3,$2))
                       //Assuming compatible then:
                       // symbolHier.addEntryToCurrentScope($2,$1,expression,true,false);
                     }
-              | epsilon {}
+              | epsilon { $$ = $1; }
 ;
 //Second function call
 
 functionCall : ID '(' expression functionCallParams  ')'{
-                      char* params = concatenateTwoStrings($4,$3,',');
+                      char* expr_value, *expr_label="";
+                      vector <char*> expr_info = splitString($3, ',');
+                      expr_value = expr_info[0];
+                      if (expr_info.size() > 1) expr_label = expr_info[1];
+                      printf("Function Call: expr_info: %s || %s\n", expr_value, expr_label);
+                      char* params = concatenateTwoStrings($4,expr_label,',');
+                      printf("Function Call: %s\n", params);
+                      printf("Function Call: %s\n", $4);
                       char* reason = nullptr;
                       SymbolTable* foundTable = symbolHier.checkFunctionExists($1, params, reason);
                       if (!foundTable){
                         yyerror(reason);
+                        printf("Function %s not found\n", $1);
                       }
                       else {
                         $$ = foundTable->returnType;
+                        quad.popLabel();
+                        $$ = concatenateTwoStrings(foundTable->returnType, params, ',');
                         printf("Function %s called\n", $1);
                         vector<char*> paramsList = splitString(params, ',');
                         quad.pushLabel(concatenateList(paramsList)); 
@@ -717,24 +801,41 @@ functionCall : ID '(' expression functionCallParams  ')'{
 ;
 
 functionCallParams :  ',' expression functionCallParams {
-                          $$ = concatenateTwoStrings($3, $2, ',');
+                          quad.popLabel();
+                          char* expr_value, *expr_label="";   
+                          vector <char*> expr_info = splitString($2, ',');
+                          expr_value = expr_info[0];
+                          if (expr_info.size() > 1) expr_label = expr_info[1];
+                          $$ = concatenateTwoStrings($3, expr_label, ',');
                         }
                     | epsilon {
                       $$ = $1;
                     }
+                    | epsilon {$$ = $1;}
 ;
 
 epsilon : {$$ = "";}
 ;
 returnStatement : RETURN_mark expression ';' {
+                    printf("||Return statement: %s\n", $2);
+                    char* expr_value, *expr_name="";
+                    vector <char*> expr_info = splitString($2, ',');
+                    expr_value = expr_info[0];
+                    if (expr_info.size() > 1) expr_name = expr_info[1];
                     SymbolTable* funcScope = symbolHier.currentScopeTable->parent;
                     if (!funcScope || funcScope->returnType == nullptr) {
                       yyerror("Return statement not allowed in this scope\n");
-                    } else if (!funcScope->validateReturnType($2)) {
+                    } else if (!funcScope->validateReturnType(expr_value)) {
                       yyerror("Return type does not match the function return type\n");
                     } else {
                       printf("Return statement ends\n");
                       $$ = $2;
+                      if (strcmp(expr_name, "") != 0) {
+                        quad.addUnary("RET", "");
+                      } else {
+                        quad.addUnary("RET", "");
+                      }
+                      quad.isFunctionFlag = 0;
                     }
                   }
                 | RETURN_mark';' {
@@ -759,8 +860,46 @@ int i; will be allowed but who cares
 }
 
 */
-forLoop : FOR_mark '(' forLoop1  ';' expression ';' ID ASSIGN expression ')' scope  {
+forLoop : FOR_mark '(' forLoop1  ';' expression after_expressions_eval ';' ID ASSIGN expression ')' scope  {
   symbolHier.updateCurrentScope(symbolHier.currentScopeTable->parent); 
+  SymbolTable* entryScope = symbolHier.getEntryScope($8);
+  if (!entryScope) {
+      semantic_errors("Variable is not declared\n");
+  } 
+  else {
+    SemanticChecker semanticChecker;
+    char* expr_value, *expr_name="";
+    vector <char*> expr_info = splitString($10, ',');
+
+    expr_value = expr_info[0];
+    if (expr_info.size() > 1) expr_name = expr_info[1];
+
+    // Create an instance of SemanticChecker
+    SymbolTable* entryScope = symbolHier.getEntryScope($8, semanticChecker.determineType(expr_value));
+    if (!entryScope) {
+        semantic_errors("Type mismatch between variable and expression\n");
+    }
+    else {
+      SymbolTableEntry* entry = entryScope->getEntry($8);
+
+      // Check if the variable is a constant
+      if (entry->getIsConstant()) {
+          semantic_errors("Cannot assign to a constant variable\n");
+      } else { 
+        // Assuming compatible, update the value of the variable
+        entry->setValue(expr_value);
+        entry->setIsInitialized(true);
+        // Use quads to assign the value to the variable
+        if (strcmp(expr_name, "") != 0) {
+          quad.addUnary("MOV", expr_name, true);
+        } else {
+          quad.addUnary("MOV", expr_value);
+        }
+        quad.resetEntryCount();
+      }
+    }
+  }
+  quad.endLoop();
 }
 ;
       
@@ -772,11 +911,87 @@ FOR_mark : FOR {
   symbolHier.addSymbolTable(localTable);
   //update current scope
   symbolHier.updateCurrentScope(localTable);
+  quad.addLoopStart();
 }
 ;
-forLoop1 : dataType ID ASSIGN expression {}
-         | ID ASSIGN expression {}
-         | epsilon {}
+forLoop1 : 
+            dataType ID ASSIGN expression {
+                SymbolTable* entryScope = symbolHier.getEntryScope($2, $1);
+                if (entryScope) {
+                    semantic_errors("Variable is already declared\n");
+                } else {
+                  // Create an instance of SemanticChecker
+                  SemanticChecker semanticChecker;
+
+                  printf("Variable Type: %s\n", $1);
+                  printf("Expression: %s\n", $4);
+
+                  char* expr_value, *expr_name="";
+                  vector <char*> expr_info = splitString($4, ',');
+
+                  expr_value = expr_info[0];
+                  if (expr_info.size() > 1) expr_name = expr_info[1];
+
+                  printf("Expression Value: %s\n", expr_value);
+                  printf("Expression Name: %s\n", expr_name);
+
+                  // Check if the types are compatible
+                  if (!semanticChecker.matchTypes($1, expr_value))
+                  {
+                    semantic_errors("Type mismatch between data type and expression\n");
+                  }
+                  else
+                  {
+                    symbolHier.addEntryToCurrentScope($2, $1, expr_value, true, false);
+                    if (strcmp(expr_name, "") != 0) {
+                      quad.addUnary("MOV", expr_name, true);
+                    } else {
+                      quad.addUnary("MOV", expr_value);
+                    }
+                    quad.resetEntryCount();
+                  }
+                }
+             }
+         |  ID ASSIGN expression {
+              SymbolTable* entryScope = symbolHier.getEntryScope($1);
+              if (!entryScope) {
+                  semantic_errors("Variable is not declared\n");
+              } 
+              else {
+                  SemanticChecker semanticChecker;
+                  char* expr_value, *expr_name="";
+                  vector <char*> expr_info = splitString($3, ',');
+
+                  expr_value = expr_info[0];
+                  if (expr_info.size() > 1) expr_name = expr_info[1];
+
+                  // Create an instance of SemanticChecker
+                  SymbolTable* entryScope = symbolHier.getEntryScope($1, semanticChecker.determineType(expr_value));
+                  if (!entryScope) {
+                      semantic_errors("Type mismatch between variable and expression\n");
+                  }
+                  else {
+                    SymbolTableEntry* entry = entryScope->getEntry($1);
+
+                    // Check if the variable is a constant
+                    if (entry->getIsConstant()) {
+                        semantic_errors("Cannot assign to a constant variable\n");
+                    } else { 
+                      // Assuming compatible, update the value of the variable
+                      entry->setValue(expr_value);
+                      entry->setIsInitialized(true);
+                      // Use quads to assign the value to the variable
+                      if (strcmp(expr_name, "") != 0) {
+                        quad.addUnary("MOV", expr_name, true);
+                      } else {
+                        quad.addUnary("MOV", expr_value);
+                      }
+                      quad.resetEntryCount();
+                    }
+                  }
+                }
+              }
+         |  epsilon { $$ = $1; }
 ;
 
 
@@ -841,7 +1056,7 @@ void semantic_warns(const char *msg) {
           return;
       }
 
-      fprintf(semantic_file, "line [%d]: Semantic Warning: %s\n", yylineno, msg); 
+      fprintf(semantic_file, "Semantic Warning: %s\n", msg); 
 }
 
 int main(int argc, char** argv){

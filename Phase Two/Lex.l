@@ -35,6 +35,10 @@ BOOL_VAL     (0|1|true|false)\b
 "switch" {return SWITCH;}
 "case" {return CASE;}
 "default" {return DEFAULT;}
+"true" { yylval.boolValue = strdup(yytext); 
+         return BOOL_VAL; }
+"false" { yylval.boolValue = strdup(yytext); 
+         return BOOL_VAL; }
 [{()}]     { return *yytext; }
 [ \t]       ; 
 "//".*   {;}
@@ -71,6 +75,13 @@ BOOL_VAL     (0|1|true|false)\b
                     return CONST; 
                  }
 
+{BOOL_VAL}      { 
+                    //printf("Token: BOOL_VAL - %s\n", yytext); 
+                    yylval.stringValue = strdup(yytext); 
+                    return BOOL_VAL; 
+                 }
+
+
 {IDENTIFIER}    { 
                     //printf("Token: IDENTIFIER - %s\n", yytext); 
                     yylval.idValue = strdup(yytext); 
@@ -99,12 +110,6 @@ BOOL_VAL     (0|1|true|false)\b
                     //printf("Token: CHAR_VAL - %s\n", yytext); 
                     yylval.charValue = yytext[0]; 
                     return CHAR_VAL; 
-                 }
-
-{BOOL_VAL}      { 
-                    //printf("Token: BOOL_VAL - %s\n", yytext); 
-                    yylval.stringValue = strdup(yytext); 
-                    return BOOL_VAL; 
                  }
 
 "+"             { 
