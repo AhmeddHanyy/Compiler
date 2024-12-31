@@ -1,0 +1,4 @@
+int myFunc() {
+    return 0;
+}
+int x = myFunc();

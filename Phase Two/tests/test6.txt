@@ -1,0 +1,16 @@
+int h = 8;
+if ((h + tru)/2 < 6) {
+    int y = 9;
+    if (h == 5) {
+        int z = 10;
+    }
+    else {
+        int z = 11;
+    }
+}
+else if (11 == 12) {
+    int f = 13;
+}
+else {
+    int x = -5;
+}

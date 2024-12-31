@@ -1,0 +1,8 @@
+int myFunc(int x, int y, string w) {
+    return x+y;
+}
+
+string myFunc(int x, int y, string w) {
+    return w;
+}
+int x = myFunc(8, 9, "10");

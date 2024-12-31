@@ -1,0 +1,15 @@
+int x = 5;
+bool y = true;
+
+if ((x > 7) && (y == true)) {
+    bool z = false;
+}
+else if ((x+7<10) || (y == false)) {
+    bool z = true;
+}
+else if (x+7==10) {
+    bool z = false;
+}
+else {
+    bool z = true;
+}

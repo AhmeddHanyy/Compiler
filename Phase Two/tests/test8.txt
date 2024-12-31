@@ -1,0 +1,9 @@
+bool x = true;
+bool y = !x;
+bool w;
+
+if (((x && y) || (x || y)) == true) {
+    w = true;
+} else {
+    w = false;
+}

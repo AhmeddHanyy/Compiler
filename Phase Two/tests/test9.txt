@@ -1,0 +1,10 @@
+int x = 5;
+bool y = true;
+
+bool z = (x > 7) && (y == true); 
+while (z && y && (x > 7)) {
+    z = false;
+    while (x < 2) {
+        x = x + 1;
+    }
+}
