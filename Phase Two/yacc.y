@@ -14,9 +14,9 @@
   int yylineno = 1;
   int num_scopes = 0;
   SymbolHier symbolHier;
-  Quadraples quad;
   char* caseIdentifier;
   char* switchIdentifier;
+  Quadraples quad;
 %}
 
 %union {
