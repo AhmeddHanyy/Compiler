@@ -91,6 +91,11 @@ SymbolTable *SymbolHier::checkFunctionExists(char *functionName, char *paramsBuc
             functionParams.push_back(entry.second->getVariableType()); // Get each parameter's type
         }
 
+        if (functionParams.size() == 0)
+        {
+            functionParams.push_back(""); // Add an empty string to indicate no parameters
+        }
+
         // Split paramsBucket into individual parameters
         vector<char *> valuesBucket = splitString(paramsBucket, ','); // should be values
         // now we need to convert those values to types
@@ -112,6 +117,14 @@ SymbolTable *SymbolHier::checkFunctionExists(char *functionName, char *paramsBuc
             reason = const_cast<char *>("Parameters not matching");
             continue;
         }
+
+        if (valuesBucket.size() == 1 && strcmp(valuesBucket[0], "") == 0 && functionParams.size() == 1 && strcmp(functionParams[0], "") == 0)
+        {
+            printf("\nHAHAHAHA\n\n");
+            reason = nullptr;
+            return functionTable; // Function found with matching name and no parameters
+        }
+
         SemanticChecker checker;
         vector<char *> typesBucket;
         for (int i = 0; i < valuesBucket.size(); i++)

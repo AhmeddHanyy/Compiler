@@ -15,6 +15,8 @@
   int num_scopes = 0;
   SymbolHier symbolHier;
   Quadraples quad;
+  char* caseIdentifier;
+  char* switchIdentifier;
 %}
 
 %union {
@@ -45,8 +47,9 @@
 
 
 
-%type <stringValue> semi_colon_error dataType after_expressions_eval program_start_mark Comparator factor line start_line_mark ID expression arithExpression compExpression andLogExpression logExpression notLogExpression scope startScope endScope ifStatement ifScope elseScope IF_mark ELSE_mark WHILE_mark DO_mark doWhile function functionSig functionParams defaultParams functionCall functionCallParams epsilon returnStatement forLoop FOR_mark forLoop1 switchCase multiCase singleCase term1 term2 term3
+%type <stringValue> semi_colon_error dataType caseIdentifierChar caseIdentifierInt after_expressions_eval program_start_mark Comparator factor line start_line_mark ID expression arithExpression compExpression andLogExpression logExpression notLogExpression scope startScope endScope ifStatement ifScope elseScope IF_mark ELSE_mark WHILE_mark DO_mark doWhile function functionSig functionParams defaultParams functionCall functionCallParams epsilon returnStatement forLoop FOR_mark forLoop1 switchCase term1 term2 term3
 %type <stringValue> EQ NEQ LT GT LE GE
+%type <stringValue> IDCase
 
 %%
 
@@ -783,15 +786,15 @@ functionCall : ID '(' expression functionCallParams  ')'{
                     }
              | ID '(' ')' {
                       char* reason = nullptr;
-                      SymbolTable* foundTable = symbolHier.checkFunctionExists($1, nullptr, reason);
+                      SymbolTable* foundTable = symbolHier.checkFunctionExists($1, "", reason);
                       if (!foundTable){
                         semantic_errors(reason);
                       }
                       else {
-                        $$ = foundTable->returnType;
-                        printf("Function %s called\n", $1);
-                        quad.pushLabel($1);
+                        $$ = concatenateTwoStrings(foundTable->returnType, "void", ','); 
+                        quad.pushLabel("");
                       }
+                        
                     }
 ;
 
@@ -989,19 +992,58 @@ forLoop1 :
 
 /*##################################################################################################*/
 // Switch case
-switchCase : SWITCH '(' ID ')' startScope multiCase endScope {}
-;
+switchCase : SWITCH '(' IDCase ')' beginScopeCase caseStatements endScope { 
+                                                                    quad.processCases(switchIdentifier);
+                                                                    quad.addLineCase();
+                                                                  }
+           ;
 
+beginScopeCase : startScope { 
+                            quad.jumpStartCase();
+                            }
+               ;
 
+IDCase : IDENTIFIER { $$ = $1;
+                      switchIdentifier = $1;
+                    }
+       ;
 
-multiCase : multiCase singleCase {}
-          | singleCase {}
-;
+caseStatements : caseStatements caseStatement {}
+               | caseStatement {}
+               ;
 
-singleCase : CASE INTEGER_VAL ':' script {}
-           | CASE CHAR_VAL ':' script {}
-           | DEFAULT ':' script {}
-;
+caseStatement : CASE caseIdentifierInt beginCase script {;
+                                                quad.addJE();
+                                                }
+              | CASE caseIdentifierChar beginCase script { 
+                                                quad.addJE();
+                                                }
+              | DefaultIdentifier beginCase script {
+                                  quad.addJE();
+                                  }
+              ;
+
+DefaultIdentifier : DEFAULT { caseIdentifier = "default";}
+                  ;
+
+beginCase : ':' { 
+                  quad.insertCase(caseIdentifier);
+                  }
+          ;
+
+caseIdentifierInt : INTEGER_VAL {$$ = $1;
+                                  caseIdentifier = $1;
+                                  quad.insertCaseID(caseIdentifier); 
+                                  }
+                                  
+                  ;
+
+caseIdentifierChar : CHAR_VAL {$$ = $1;
+                                      caseIdentifier = $1;
+                                      quad.insertCaseID(caseIdentifier); 
+                                      }
+                    ;
+                   ;
 
 
 %%
@@ -1050,3 +1092,4 @@ if (yyparse() == 0) {
   fclose(yyout);
   return 0;
 }
+

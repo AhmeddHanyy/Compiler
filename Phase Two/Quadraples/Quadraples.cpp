@@ -258,6 +258,11 @@ int Quadraples::getLabelsLength()
     return labels.size();
 }
 
+void Quadraples::jumpStartCase()
+{
+    this->insertEntry("JMP", "Startswitch", "", "");
+}
+
 void Quadraples::incEntryCount()
 {
     this->entryCount++;

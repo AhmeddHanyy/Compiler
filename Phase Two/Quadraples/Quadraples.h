@@ -89,6 +89,7 @@ public:
 
     // Switch case
     void insertCase(char *caseValue);
+    void jumpStartCase();
     void addJS();
     void addJE();
     void addLineCase();
